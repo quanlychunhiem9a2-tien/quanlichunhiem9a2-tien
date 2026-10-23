@@ -1,0 +1,8 @@
+{
+  "name": "GVCN AI – Lớp học thông minh",
+  "description": "Hệ thống quản trị lớp học thông minh dành cho giáo viên chủ nhiệm THCS",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

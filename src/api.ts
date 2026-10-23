@@ -1,10 +1,25 @@
 import { AppState } from './types';
-import { defaultAppState } from './mockData';
+import { defaultAppState, guestUserAccount } from './mockData';
 import { normalizeStudentTT22 } from './utils/tt22Evaluation';
 
 const STORAGE_KEY = 'gvcn_ai_app_state_v1';
+const SESSION_USER_KEY = 'gvcn_ai_session_user_v1';
+
+function getSessionUser() {
+  try {
+    const sessionUser = sessionStorage.getItem(SESSION_USER_KEY);
+    if (sessionUser) {
+      return JSON.parse(sessionUser);
+    }
+  } catch (e) {
+    // ignore
+  }
+  return guestUserAccount;
+}
 
 export async function fetchAppState(): Promise<AppState> {
+  const activeUser = getSessionUser();
+
   try {
     const res = await fetch('/api/db');
     if (res.ok) {
@@ -15,7 +30,7 @@ export async function fetchAppState(): Promise<AppState> {
           ...defaultAppState,
           ...json.data,
           students: rawStudents.map(normalizeStudentTT22),
-          currentUser: json.data.currentUser || defaultAppState.currentUser,
+          currentUser: activeUser,
           userAccounts: json.data.userAccounts || defaultAppState.userAccounts,
           rolePermissions: json.data.rolePermissions || defaultAppState.rolePermissions,
         };
@@ -35,7 +50,7 @@ export async function fetchAppState(): Promise<AppState> {
         ...defaultAppState,
         ...parsed,
         students: rawStudents.map(normalizeStudentTT22),
-        currentUser: parsed.currentUser || defaultAppState.currentUser,
+        currentUser: activeUser,
         userAccounts: parsed.userAccounts || defaultAppState.userAccounts,
         rolePermissions: parsed.rolePermissions || defaultAppState.rolePermissions,
       };
@@ -47,6 +62,7 @@ export async function fetchAppState(): Promise<AppState> {
   // Save initial default
   const normalizedDefault: AppState = {
     ...defaultAppState,
+    currentUser: activeUser,
     students: defaultAppState.students.map(normalizeStudentTT22),
   };
   saveAppState(normalizedDefault);
@@ -54,6 +70,15 @@ export async function fetchAppState(): Promise<AppState> {
 }
 
 export async function saveAppState(state: AppState): Promise<boolean> {
+  // Update sessionStorage for active user
+  try {
+    if (state.currentUser) {
+      sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(state.currentUser));
+    }
+  } catch (e) {
+    // ignore
+  }
+
   // Always update localStorage
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));

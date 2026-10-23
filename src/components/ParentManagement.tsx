@@ -11,9 +11,12 @@ import {
   Calendar,
   Clock,
   Download,
-  AlertCircle
+  AlertCircle,
+  Lock,
+  Eye
 } from 'lucide-react';
 import { AppState, ParentContact } from '../types';
+import { hasPermission, isReadOnly, isTeacher } from '../utils/permissionUtils';
 
 interface ParentManagementProps {
   appState: AppState;
@@ -25,6 +28,9 @@ export const ParentManagement: React.FC<ParentManagementProps> = ({
   onUpdateState,
 }) => {
   const { students, parentContacts } = appState;
+  const canManageParents = hasPermission(appState, 'canManageParents');
+  const readOnly = isReadOnly(appState);
+
   const [activeTab, setActiveTab] = useState<'directory' | 'logs' | 'compose'>('directory');
   const [searchQuery, setSearchQuery] = useState('');
   const [copied, setCopied] = useState(false);
@@ -58,6 +64,10 @@ export const ParentManagement: React.FC<ParentManagementProps> = ({
   };
 
   const handleSaveContactLog = () => {
+    if (!canManageParents) {
+      alert('Chế độ Chỉ xem: Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm để lưu nhật ký liên hệ!');
+      return;
+    }
     const student = students.find((s) => s.id === newLog.studentId);
     if (!student) return;
 
@@ -135,6 +145,21 @@ export const ParentManagement: React.FC<ParentManagementProps> = ({
         </div>
       </div>
 
+      {/* Read-Only Notice */}
+      {readOnly && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-center justify-between text-xs text-amber-900">
+          <div className="flex items-center gap-2.5">
+            <Eye className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              <strong>Giao diện đang ở chế độ Chỉ xem:</strong> Bạn có thể tra cứu thông tin danh bạ phụ huynh lớp 9A2. Để thêm nhật ký cuộc gọi hoặc gửi thông báo, vui lòng đăng nhập tài khoản <strong>Giáo viên chủ nhiệm</strong>.
+            </span>
+          </div>
+          <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full shrink-0">
+            Chỉ xem
+          </span>
+        </div>
+      )}
+
       {/* Tab 1: Directory */}
       {activeTab === 'directory' && (
         <div className="bg-white rounded-2xl border border-[#D8E7FA] shadow-xs overflow-hidden">
@@ -149,13 +174,15 @@ export const ParentManagement: React.FC<ParentManagementProps> = ({
                 className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-gray-50 border border-[#D8E7FA] focus:ring-2 focus:ring-[#1677E8]"
               />
             </div>
-            <button
-              onClick={() => setIsAddLogOpen(true)}
-              className="px-3.5 py-1.5 rounded-xl bg-[#1677E8] text-white text-xs font-bold flex items-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Ghi nhật ký liên hệ
-            </button>
+            {canManageParents && (
+              <button
+                onClick={() => setIsAddLogOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-[#1677E8] text-white text-xs font-bold flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Ghi nhật ký liên hệ
+              </button>
+            )}
           </div>
 
           <div className="overflow-x-auto">

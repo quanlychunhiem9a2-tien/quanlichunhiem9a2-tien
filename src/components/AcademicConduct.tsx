@@ -21,7 +21,9 @@ import {
   FileSpreadsheet,
   RefreshCw,
   X,
-  FileDown
+  FileDown,
+  Lock,
+  Eye
 } from 'lucide-react';
 import {
   AppState,
@@ -41,6 +43,7 @@ import {
   computeYearFromSemesters,
   getStudentSemesterRecord
 } from '../utils/tt22Evaluation';
+import { hasPermission, isReadOnly, isTeacher } from '../utils/permissionUtils';
 
 interface AcademicConductProps {
   appState: AppState;
@@ -153,8 +156,15 @@ export const AcademicConduct: React.FC<AcademicConductProps> = ({
     }).length,
   };
 
+  const canEditAcademics = hasPermission(appState, 'canManageAcademics');
+  const readOnly = isReadOnly(appState);
+
   // ==================== INLINE EDITING HANDLERS ====================
   const handleToggleInlineMode = () => {
+    if (!canEditAcademics) {
+      alert('Hệ thống đang ở chế độ Chỉ xem (hoặc tài khoản hiện tại chưa được cấp quyền nhập điểm). Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm hoặc Cán sự lớp được ủy quyền!');
+      return;
+    }
     if (!isInlineMode) {
       // Initialize drafts for current active term
       const drafts: Record<string, SemesterRecord> = {};
@@ -226,6 +236,10 @@ export const AcademicConduct: React.FC<AcademicConductProps> = ({
   };
 
   const handleSaveInlineBatch = () => {
+    if (!canEditAcademics) {
+      alert('Hệ thống đang ở chế độ Chỉ xem. Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm hoặc Cán sự học tập để lưu điểm!');
+      return;
+    }
     onUpdateState((prev) => ({
       ...prev,
       students: prev.students.map((s) => {
@@ -268,6 +282,10 @@ export const AcademicConduct: React.FC<AcademicConductProps> = ({
 
   // ==================== AUTO COMPUTE WHOLE YEAR ====================
   const handleAutoComputeWholeYear = () => {
+    if (!canEditAcademics) {
+      alert('Hệ thống đang ở chế độ Chỉ xem. Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm để tính toán tổng kết Cả năm!');
+      return;
+    }
     onUpdateState((prev) => ({
       ...prev,
       students: prev.students.map((s) => {
@@ -317,6 +335,10 @@ export const AcademicConduct: React.FC<AcademicConductProps> = ({
   };
 
   const handleSaveModalRecord = () => {
+    if (!canEditAcademics) {
+      alert('Hệ thống đang ở chế độ Chỉ xem. Vui lòng đăng nhập tài khoản Giáo viên hoặc Cán sự lớp để chỉnh sửa!');
+      return;
+    }
     if (!editingStudent || !modalRecord) return;
 
     onUpdateState((prev) => ({
@@ -393,6 +415,10 @@ Nhận xét gồm 3 phần:
   };
 
   const handleApplyComment = () => {
+    if (!canEditAcademics) {
+      alert('Hệ thống đang ở chế độ Chỉ xem. Vui lòng đăng nhập để lưu nhận xét!');
+      return;
+    }
     if (!selectedStudentForAI || !aiComment) return;
 
     onUpdateState((prev) => ({
@@ -506,6 +532,10 @@ Nhận xét gồm 3 phần:
   };
 
   const handleApplyImportGrades = () => {
+    if (!canEditAcademics) {
+      alert('Hệ thống đang ở chế độ Chỉ xem. Vui lòng đăng nhập tài khoản có thẩm quyền để nhập điểm từ Excel!');
+      return;
+    }
     if (!importPreviewData.length) return;
 
     let matchCount = 0;
@@ -738,11 +768,15 @@ Nhận xét gồm 3 phần:
             {activeTerm === 'caNam' && (
               <button
                 onClick={handleAutoComputeWholeYear}
-                title="Tính lại điểm trung bình cả năm từ HK1 và HK2 theo công thức TT22"
-                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+                title={canEditAcademics ? "Tính lại điểm trung bình cả năm từ HK1 và HK2 theo công thức TT22" : "Cần đăng nhập GVCN để tính điểm Cả năm"}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all ${
+                  canEditAcademics
+                    ? 'bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white'
+                    : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
+                }`}
               >
-                <Calculator className="w-3.5 h-3.5" />
-                ⚡ Tự động tính Cả năm từ HK1 & HK2
+                {!canEditAcademics ? <Lock className="w-3.5 h-3.5 text-gray-400" /> : <Calculator className="w-3.5 h-3.5" />}
+                ⚡ Tự động tính Cả năm
               </button>
             )}
 
@@ -751,18 +785,26 @@ Nhận xét gồm 3 phần:
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
                 isInlineMode
                   ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-sm'
-                  : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
+                  : canEditAcademics
+                  ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
+                  : 'bg-gray-100 text-gray-500 border border-gray-200'
               }`}
             >
-              <Edit2 className="w-3.5 h-3.5" />
+              {!canEditAcademics ? <Lock className="w-3.5 h-3.5 text-gray-400" /> : <Edit2 className="w-3.5 h-3.5" />}
               {isInlineMode ? 'Đóng nhập trực tiếp' : '✏️ Nhập điểm trực tiếp'}
             </button>
 
             <button
-              onClick={() => setIsImportModalOpen(true)}
+              onClick={() => {
+                if (!canEditAcademics) {
+                  alert('Chế độ Chỉ xem: Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm hoặc Cán sự lớp để nhập file Excel!');
+                  return;
+                }
+                setIsImportModalOpen(true);
+              }}
               className="px-3 py-1.5 rounded-xl bg-white border border-[#D8E7FA] hover:bg-gray-50 text-[#17365D] text-xs font-semibold flex items-center gap-1.5 transition-colors"
             >
-              <Upload className="w-3.5 h-3.5 text-[#1677E8]" />
+              {!canEditAcademics ? <Lock className="w-3.5 h-3.5 text-gray-400" /> : <Upload className="w-3.5 h-3.5 text-[#1677E8]" />}
               Nhập Excel
             </button>
 
@@ -775,6 +817,18 @@ Nhận xét gồm 3 phần:
             </button>
           </div>
         </div>
+
+        {/* Read-Only Notice for Visitors */}
+        {readOnly && (
+          <div className="p-3 bg-amber-50/90 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Eye className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                <strong>Giao diện đang ở chế độ Chỉ xem:</strong> Khách truy cập có thể tra cứu điểm số 3 học kỳ của học sinh theo TT22. Để thêm, sửa hoặc nhập điểm từ Excel, vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm hoặc Cán sự học tập ở góc trên bên phải.
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Inline Mode Active Notification Bar */}
         {isInlineMode && (
@@ -1014,10 +1068,10 @@ Nhận xét gồm 3 phần:
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => handleOpenEditModal(s)}
-                          title={`Chỉnh sửa điểm (${activeTerm === 'hk1' ? 'HK1' : activeTerm === 'hk2' ? 'HK2' : 'Cả năm'})`}
+                          title={canEditAcademics ? `Chỉnh sửa điểm (${activeTerm === 'hk1' ? 'HK1' : activeTerm === 'hk2' ? 'HK2' : 'Cả năm'})` : `Xem chi tiết bảng điểm (${activeTerm === 'hk1' ? 'HK1' : activeTerm === 'hk2' ? 'HK2' : 'Cả năm'})`}
                           className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-[#1677E8] transition-colors"
                         >
-                          <Edit2 className="w-3.5 h-3.5" />
+                          {canEditAcademics ? <Edit2 className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-blue-600" />}
                         </button>
                         <button
                           onClick={() => handleGenerateAIComment(s)}
@@ -1051,8 +1105,13 @@ Nhận xét gồm 3 phần:
               {/* Header */}
               <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-white">
                 <div>
-                  <h3 className="font-extrabold text-[#17365D] text-sm">
-                    Cập nhật điểm & Xếp loại TT22: {editingStudent.fullName}
+                  <h3 className="font-extrabold text-[#17365D] text-sm flex items-center gap-2">
+                    {canEditAcademics ? 'Cập nhật điểm & Xếp loại TT22' : 'Bảng điểm & Xếp loại TT22 (Chỉ xem)'}: {editingStudent.fullName}
+                    {!canEditAcademics && (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold border border-amber-300">
+                        Chỉ xem
+                      </span>
+                    )}
                   </h3>
                   <p className="text-[11px] text-[#66809F] mt-0.5">
                     {editingStudent.code} • Tổ {editingStudent.teamId}
@@ -1068,6 +1127,15 @@ Nhận xét gồm 3 phần:
                   ✕
                 </button>
               </div>
+
+              {!canEditAcademics && (
+                <div className="px-5 py-2.5 bg-amber-50 border-b border-amber-200 text-amber-900 text-xs flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>
+                    <strong>Chế độ xem:</strong> Bạn đang xem bảng điểm học sinh. Để chỉnh sửa điểm hoặc danh hiệu, vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm hoặc Cán sự học tập.
+                  </span>
+                </div>
+              )}
 
               {/* Semester Switcher Tabs Inside Modal */}
               <div className="px-5 pt-4 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
@@ -1164,6 +1232,7 @@ Nhận xét gồm 3 phần:
                           step="0.1"
                           min="0"
                           max="10"
+                          disabled={!canEditAcademics}
                           value={v}
                           onChange={(e) => {
                             const val = parseFloat(e.target.value) || 0;
@@ -1185,7 +1254,9 @@ Nhận xét gồm 3 phần:
                               gpa: autoEval.gpa,
                             });
                           }}
-                          className="w-16 px-2 py-1 rounded-lg border border-gray-300 font-mono font-bold text-center text-[#0B438A] bg-white focus:ring-1 focus:ring-blue-500"
+                          className={`w-16 px-2 py-1 rounded-lg border font-mono font-bold text-center text-[#0B438A] ${
+                            !canEditAcademics ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : 'bg-white border-gray-300 focus:ring-1 focus:ring-blue-500'
+                          }`}
                         />
                       </div>
                     ))}
@@ -1205,6 +1276,7 @@ Nhận xét gồm 3 phần:
                         </span>
                         <select
                           value={v}
+                          disabled={!canEditAcademics}
                           onChange={(e) => {
                             const val = e.target.value as 'Đạt' | 'Chưa đạt';
                             const updatedEval = {
@@ -1226,7 +1298,11 @@ Nhận xét gồm 3 phần:
                             });
                           }}
                           className={`px-2 py-1 rounded-lg border text-xs font-bold ${
-                            v === 'Đạt' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-red-50 text-red-800 border-red-300'
+                            !canEditAcademics
+                              ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200'
+                              : v === 'Đạt'
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                              : 'bg-red-50 text-red-800 border-red-300'
                           }`}
                         >
                           <option value="Đạt">Đạt</option>
@@ -1245,6 +1321,7 @@ Nhận xét gồm 3 phần:
                     </label>
                     <select
                       value={modalRecord.conductRank}
+                      disabled={!canEditAcademics}
                       onChange={(e) => {
                         const newConduct = e.target.value as ConductRankTT22;
                         const autoEval = evaluateStudentTT22(
@@ -1260,7 +1337,9 @@ Nhận xét gồm 3 phần:
                           awardTitle: autoEval.awardTitle,
                         });
                       }}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white font-bold text-emerald-800"
+                      className={`w-full px-3 py-2 rounded-xl border font-bold ${
+                        !canEditAcademics ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : 'bg-white text-emerald-800 border-gray-200'
+                      }`}
                     >
                       <option value="Tốt">Tốt</option>
                       <option value="Khá">Khá</option>
@@ -1273,8 +1352,11 @@ Nhận xét gồm 3 phần:
                     <label className="font-semibold text-[#17365D] block mb-1">Danh hiệu khen thưởng:</label>
                     <select
                       value={modalRecord.awardTitle || ''}
+                      disabled={!canEditAcademics}
                       onChange={(e) => setModalRecord({ ...modalRecord, awardTitle: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white font-bold text-amber-900"
+                      className={`w-full px-3 py-2 rounded-xl border font-bold ${
+                        !canEditAcademics ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : 'bg-white text-amber-900 border-gray-200'
+                      }`}
                     >
                       <option value="">(Để trống - Chưa có)</option>
                       <option value="Học sinh Giỏi">Học sinh Giỏi</option>
@@ -1287,7 +1369,7 @@ Nhận xét gồm 3 phần:
               {/* Modal Footer */}
               <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
                 <span className="text-[11px] text-[#66809F]">
-                  Đang lưu vào: <strong>{modalTerm === 'hk1' ? 'Học kỳ 1' : modalTerm === 'hk2' ? 'Học kỳ 2' : 'Cả năm'}</strong>
+                  Đang xem: <strong>{modalTerm === 'hk1' ? 'Học kỳ 1' : modalTerm === 'hk2' ? 'Học kỳ 2' : 'Cả năm'}</strong>
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -1297,14 +1379,16 @@ Nhận xét gồm 3 phần:
                     }}
                     className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 text-xs font-bold text-[#17365D]"
                   >
-                    Hủy
+                    {canEditAcademics ? 'Hủy' : 'Đóng'}
                   </button>
-                  <button
-                    onClick={handleSaveModalRecord}
-                    className="px-5 py-2 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
-                  >
-                    <Save className="w-3.5 h-3.5" /> Lưu điểm & Xếp loại
-                  </button>
+                  {canEditAcademics && (
+                    <button
+                      onClick={handleSaveModalRecord}
+                      className="px-5 py-2 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
+                    >
+                      <Save className="w-3.5 h-3.5" /> Lưu điểm & Xếp loại
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1369,11 +1453,12 @@ Nhận xét gồm 3 phần:
                 Hủy
               </button>
               <button
-                disabled={isGeneratingAI || !aiComment}
+                disabled={isGeneratingAI || !aiComment || !canEditAcademics}
                 onClick={handleApplyComment}
+                title={!canEditAcademics ? "Cần đăng nhập tài khoản có quyền chỉnh sửa để lưu nhận xét" : undefined}
                 className="px-4 py-2 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] disabled:opacity-50 font-bold text-xs text-white flex items-center gap-1.5 shadow-sm"
               >
-                <Check className="w-4 h-4" />
+                {!canEditAcademics ? <Lock className="w-4 h-4" /> : <Check className="w-4 h-4" />}
                 Lưu vào nhận xét {activeTerm === 'hk1' ? 'HK1' : activeTerm === 'hk2' ? 'HK2' : 'Cả năm'}
               </button>
             </div>

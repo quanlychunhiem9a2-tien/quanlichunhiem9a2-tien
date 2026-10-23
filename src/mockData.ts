@@ -1371,6 +1371,30 @@ export const defaultRolePermissions: Record<UserRole, RolePermissions> = {
     canExportReports: false,
     canConfigureSystem: false,
   },
+  guest: {
+    canManageStudents: false,
+    canTakeAttendance: false,
+    attendanceScope: 'none',
+    canManageAcademics: false,
+    canRecordEmulation: false,
+    emulationScope: 'none',
+    canCreateOfficialPlan: false,
+    canProposePlanTask: false,
+    canToggleTasks: false,
+    canManageParents: false,
+    canUseAI: false,
+    canExportReports: false,
+    canConfigureSystem: false,
+  },
+};
+
+export const guestUserAccount: UserAccount = {
+  id: 'user-guest',
+  name: 'Khách xem',
+  role: 'guest',
+  roleTitle: 'Chế độ chỉ xem',
+  category: 'Khác',
+  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
 };
 
 export const defaultAppState: AppState = {
@@ -1390,7 +1414,7 @@ export const defaultAppState: AppState = {
   plans: initialPlans,
   documents: initialDocuments,
   parentContacts: initialParentContacts,
-  currentUser: initialUserAccounts[0],
+  currentUser: guestUserAccount,
   userAccounts: initialUserAccounts,
   rolePermissions: defaultRolePermissions,
 };

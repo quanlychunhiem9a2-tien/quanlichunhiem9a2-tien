@@ -25,10 +25,12 @@ import {
   X,
   Search,
   CheckCheck,
-  RotateCcw
+  RotateCcw,
+  Lock
 } from 'lucide-react';
 import { AppState, HomeroomPlan, SpecialStudentConcern } from '../types';
 import { sendAIChatMessage } from '../api';
+import { hasPermission, isReadOnly, isTeacher as isTeacherUtil } from '../utils/permissionUtils';
 
 interface HomeroomPlanProps {
   appState: AppState;
@@ -99,7 +101,12 @@ export const HomeroomPlanComponent: React.FC<HomeroomPlanProps> = ({
   onUpdateState,
 }) => {
   const { plans, students, teacherName, className, schoolName, academicYear, currentUser } = appState;
-  const isTeacher = !currentUser || currentUser.role === 'teacher';
+  const readOnly = isReadOnly(appState);
+  const isTeacher = isTeacherUtil(appState);
+  const canCreatePlan = hasPermission(appState, 'canCreateOfficialPlan');
+  const canProposeTask = hasPermission(appState, 'canProposePlanTask');
+  const canToggleTask = hasPermission(appState, 'canToggleTasks');
+  const canUseAI = hasPermission(appState, 'canUseAI');
 
   // Selected week (1 to 35). Default to week 2
   const [selectedWeek, setSelectedWeek] = useState<number>(2);
@@ -642,28 +649,61 @@ ${plan.reviewNotes || 'Đang thực hiện trong tuần'}`;
 
           <button
             onClick={() => {
+              if (!canUseAI) {
+                alert('Chế độ Chỉ xem: Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm để sử dụng Trợ lý AI soạn kế hoạch!');
+                return;
+              }
               setAiFocusPrompt(currentMeta.theme);
               setAiResultPreview(null);
               setIsAIModalOpen(true);
             }}
-            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all ${
+              canUseAI
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white'
+                : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
+            }`}
           >
-            <Sparkles className="w-4 h-4" />
+            {!canUseAI ? <Lock className="w-4 h-4 text-gray-400" /> : <Sparkles className="w-4 h-4" />}
             AI Soạn kế hoạch tuần
           </button>
 
           <button
-            onClick={() => handleOpenCreateModal(selectedWeek)}
-            className="px-4 py-2 rounded-xl bg-[#1677E8] hover:bg-blue-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-blue-500/20 transition-all"
+            onClick={() => {
+              if (readOnly) {
+                alert('Chế độ Chỉ xem: Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm hoặc Cán sự lớp để tạo kế hoạch!');
+                return;
+              }
+              handleOpenCreateModal(selectedWeek);
+            }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all ${
+              !readOnly
+                ? 'bg-[#1677E8] hover:bg-blue-600 text-white shadow-blue-500/20'
+                : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
+            }`}
           >
-            <Plus className="w-4 h-4" />
+            {readOnly ? <Lock className="w-4 h-4 text-gray-400" /> : <Plus className="w-4 h-4" />}
             {isTeacher ? 'Tạo kế hoạch tuần mới' : 'Đề xuất kế hoạch tuần'}
           </button>
         </div>
       </div>
 
+      {/* Read-Only Notice Banner */}
+      {readOnly && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-center justify-between text-xs text-amber-900">
+          <div className="flex items-center gap-2.5">
+            <Eye className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              <strong>Giao diện đang ở chế độ Chỉ xem:</strong> Khách truy cập có thể xem kế hoạch công tác chủ nhiệm 35 tuần và các nhiệm vụ của lớp. Để lập kế hoạch, phân công hoặc cập nhật tiến độ công việc, vui lòng đăng nhập tài khoản <strong>Giáo viên chủ nhiệm</strong> hoặc <strong>Ban cán sự</strong>.
+            </span>
+          </div>
+          <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full shrink-0">
+            Chỉ xem
+          </span>
+        </div>
+      )}
+
       {/* Role permission info banner */}
-      {!isTeacher && currentUser && (
+      {!readOnly && !isTeacher && currentUser && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50/70 border border-blue-200 rounded-2xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs">
           <div className="flex items-center gap-2.5">
             <ShieldCheck className="w-4 h-4 text-[#1677E8]" />

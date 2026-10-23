@@ -17,9 +17,12 @@ import {
   ChevronRight,
   TrendingUp,
   FileText,
-  Star
+  Star,
+  Lock,
+  Eye
 } from 'lucide-react';
 import { AppState, EmulationRecord, Student } from '../types';
+import { hasPermission, isReadOnly, isTeacher } from '../utils/permissionUtils';
 
 interface EmulationDisciplineProps {
   appState: AppState;
@@ -133,8 +136,15 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
     return { team1: sumT1, team2: sumT2, team3: sumT3, team4: sumT4 };
   }, [fullYearMatrix]);
 
+  const canRecordAny = hasPermission(appState, 'canRecordEmulation');
+  const readOnly = isReadOnly(appState);
+
   // Handle Add Record
   const handleAddRecord = () => {
+    if (!hasPermission(appState, 'canRecordEmulation', Number(newRecord.teamId))) {
+      alert('Bạn không có quyền ghi điểm thi đua cho Tổ này (chỉ xem hoặc không thuộc phạm vi phụ trách).');
+      return;
+    }
     if (!newRecord.criteria) return;
     const rec: EmulationRecord = {
       id: `emu-${Date.now()}`,
@@ -158,6 +168,10 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
   };
 
   const handleDeleteRecord = (id: string) => {
+    if (!canRecordAny) {
+      alert('Hệ thống đang ở chế độ Chỉ xem. Vui lòng đăng nhập tài khoản có thẩm quyền để xóa điểm thi đua!');
+      return;
+    }
     onUpdateState((prev) => ({
       ...prev,
       emulationRecords: prev.emulationRecords.filter((r) => r.id !== id),
@@ -280,6 +294,10 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
 
           <button
             onClick={() => {
+              if (!canRecordAny) {
+                alert('Chế độ Chỉ xem: Vui lòng đăng nhập tài khoản Giáo viên hoặc Cán sự nề nếp / Tổ trưởng để ghi điểm thi đua!');
+                return;
+              }
               setNewRecord({
                 ...newRecord,
                 week: selectedWeek,
@@ -288,16 +306,35 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
               });
               setIsLogModalOpen(true);
             }}
-            className="px-3.5 py-2 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-blue-500/20 transition-all shrink-0"
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all shrink-0 ${
+              canRecordAny
+                ? 'bg-[#1677E8] hover:bg-[#0B438A] text-white shadow-blue-500/20'
+                : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
+            }`}
           >
-            <Plus className="w-4 h-4" />
+            {!canRecordAny ? <Lock className="w-4 h-4 text-gray-400" /> : <Plus className="w-4 h-4" />}
             {isTeamLeader ? `Ghi điểm Tổ ${userTeamId}` : 'Ghi điểm thi đua'}
           </button>
         </div>
       </div>
 
+      {/* Read-only banner */}
+      {readOnly && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-center justify-between text-xs text-amber-900">
+          <div className="flex items-center gap-2.5">
+            <Eye className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              <strong>Giao diện đang ở chế độ Chỉ xem:</strong> Bạn có thể theo dõi xếp hạng thi đua 35 tuần và điểm số các tổ. Để ghi nhận điểm cộng/trừ hoặc sửa đổi kết quả, vui lòng đăng nhập tài khoản <strong>Giáo viên chủ nhiệm</strong> hoặc <strong>Ban cán sự / Tổ trưởng</strong>.
+            </span>
+          </div>
+          <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full shrink-0">
+            Chỉ xem
+          </span>
+        </div>
+      )}
+
       {/* Role permission info banner */}
-      {currentUser && currentUser.role !== 'teacher' && (
+      {!readOnly && currentUser && currentUser.role !== 'teacher' && (
         <div className="bg-gradient-to-r from-amber-50 to-orange-50/60 border border-amber-200 rounded-2xl p-3.5 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2.5">
             <Trophy className="w-4 h-4 text-amber-600" />
@@ -494,16 +531,18 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                   Hiển thị các ghi nhận thực tế của ban cán sự và cờ đỏ trong tuần {selectedWeek}
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  setNewRecord({ ...newRecord, week: selectedWeek });
-                  setIsLogModalOpen(true);
-                }}
-                className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1677E8] font-bold text-xs flex items-center gap-1.5 transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Thêm điểm ghi nhận
-              </button>
+              {canRecordAny && (
+                <button
+                  onClick={() => {
+                    setNewRecord({ ...newRecord, week: selectedWeek });
+                    setIsLogModalOpen(true);
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1677E8] font-bold text-xs flex items-center gap-1.5 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Thêm điểm ghi nhận
+                </button>
+              )}
             </div>
 
             <div className="overflow-x-auto">
@@ -557,12 +596,15 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                           <td className="py-3 px-3.5 text-[#66809F]">{r.recordedBy}</td>
                           <td className="py-3 px-3.5 text-[#66809F]">{r.note || '-'}</td>
                           <td className="py-3 px-3.5 text-right">
-                            <button
-                              onClick={() => handleDeleteRecord(r.id)}
-                              className="text-gray-400 hover:text-red-500 p-1"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {canRecordAny && (
+                              <button
+                                onClick={() => handleDeleteRecord(r.id)}
+                                className="text-gray-400 hover:text-red-500 p-1"
+                                title="Xóa điểm thi đua"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))

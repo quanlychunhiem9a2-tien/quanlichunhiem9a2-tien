@@ -185,6 +185,7 @@ export type UserRole =
   | 'team_leader_2'
   | 'team_leader_3'
   | 'team_leader_4'
+  | 'guest'
   | (string & {});
 
 export interface UserAccount {

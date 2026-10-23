@@ -28,10 +28,13 @@ import {
   AlertTriangle,
   ChevronRight,
   Info,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Lock,
+  Eye
 } from 'lucide-react';
 import { AppState, UserRole, RolePermissions, UserAccount, Student } from '../types';
 import { initialUserAccounts, defaultRolePermissions } from '../mockData';
+import { hasPermission, isReadOnly, isTeacher } from '../utils/permissionUtils';
 
 interface SystemSettingsProps {
   appState: AppState;
@@ -93,8 +96,14 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
 
   const userAccounts: UserAccount[] = appState.userAccounts || initialUserAccounts;
   const currentUser: UserAccount = appState.currentUser || userAccounts[0];
+  const isGVCN = isTeacher(appState);
+  const readOnly = isReadOnly(appState);
 
   const handleSave = () => {
+    if (!isGVCN) {
+      alert('Chỉ tài khoản Giáo viên chủ nhiệm mới có quyền lưu và cập nhật cấu hình hệ thống!');
+      return;
+    }
     onUpdateState((prev) => ({
       ...prev,
       ...formData,
@@ -117,6 +126,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
     field: keyof RolePermissions,
     value: any
   ) => {
+    if (!isGVCN) {
+      alert('Chỉ tài khoản Giáo viên chủ nhiệm mới có quyền sửa đổi quyền hạn vai trò!');
+      return;
+    }
     const updated = {
       ...permissionsState,
       [role]: {
@@ -132,6 +145,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   };
 
   const handleResetPermissionsToDefault = () => {
+    if (!isGVCN) {
+      alert('Chỉ tài khoản Giáo viên chủ nhiệm mới có quyền khôi phục ma trận phân quyền mặc định!');
+      return;
+    }
     if (confirm('Khôi phục ma trận phân quyền về chuẩn mực mặc định của Bộ GD&ĐT?')) {
       setPermissionsState(defaultRolePermissions);
       onUpdateState((prev) => ({
@@ -230,6 +247,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   // Submit Add Account
   const handleAddAccountSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isGVCN) {
+      alert('Chỉ tài khoản Giáo viên chủ nhiệm mới có quyền thêm vai trò phân quyền!');
+      return;
+    }
     if (!newAccountName.trim() || !newAccountRoleTitle.trim()) {
       alert('Vui lòng điền đầy đủ họ tên và tên chức vụ / vai trò!');
       return;
@@ -273,6 +294,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
 
   // Handle Delete Account
   const handleConfirmDelete = () => {
+    if (!isGVCN) {
+      alert('Chỉ tài khoản Giáo viên chủ nhiệm mới có quyền xóa tài khoản phân quyền!');
+      return;
+    }
     if (!accountToDelete) return;
 
     if (accountToDelete.role === 'teacher') {
@@ -300,6 +325,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
 
   // Handle Save Edit Account
   const handleSaveEditPermissions = () => {
+    if (!isGVCN) {
+      alert('Chỉ tài khoản Giáo viên chủ nhiệm mới có quyền lưu chỉnh sửa phân quyền!');
+      return;
+    }
     if (!editingAccount) return;
     onUpdateState((prev) => ({
       ...prev,
@@ -320,6 +349,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   };
 
   const handleRestoreJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isGVCN) {
+      alert('Chỉ tài khoản Giáo viên chủ nhiệm mới có quyền khôi phục dữ liệu từ JSON!');
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -338,6 +371,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   };
 
   const handleConfirmReset = async () => {
+    if (!isGVCN) {
+      alert('Chỉ tài khoản Giáo viên chủ nhiệm mới có quyền làm mới dữ liệu về mặc định!');
+      return;
+    }
     if (confirm('Thầy/Cô có chắc chắn muốn nạp lại dữ liệu DEMO mẫu ban đầu? Toàn bộ thay đổi chưa lưu sẽ được làm mới.')) {
       await onResetDefaults();
       alert('Đã đặt lại dữ liệu mặc định thành công!');
@@ -474,23 +511,52 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>+ Thêm vai trò mới</span>
-          </button>
+          {isGVCN && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>+ Thêm vai trò mới</span>
+            </button>
+          )}
 
-          <button
-            onClick={handleSave}
-            className="px-4 py-2.5 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
-          >
-            {saved ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />}
-            {saved ? 'Đã lưu cấu hình!' : 'Lưu tất cả thay đổi'}
-          </button>
+          {isGVCN ? (
+            <button
+              onClick={handleSave}
+              className="px-4 py-2.5 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+            >
+              {saved ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />}
+              {saved ? 'Đã lưu cấu hình!' : 'Lưu tất cả thay đổi'}
+            </button>
+          ) : (
+            <div className="px-3.5 py-2 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 text-xs font-bold flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-amber-600" />
+              <span>Chế độ chỉ xem</span>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Read-Only Notice */}
+      {!isGVCN && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Eye className="w-5 h-5 text-amber-600 shrink-0" />
+            <div>
+              <p className="font-extrabold text-amber-950">
+                Bạn đang xem cấu hình hệ thống & phân quyền ở chế độ Chỉ xem
+              </p>
+              <p className="text-[11.5px] text-amber-800 mt-0.5">
+                Chỉ có tài khoản <strong>Giáo viên chủ nhiệm (GVCN)</strong> mới có thẩm quyền sửa đổi thông tin lớp, phân công chức vụ và phân quyền hệ thống. Hãy đăng nhập tài khoản GVCN để thực hiện thay đổi.
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full shrink-0">
+            Chỉ xem
+          </span>
+        </div>
+      )}
 
       {/* Navigation Tabs */}
       <div className="flex flex-wrap items-center gap-2 p-1 bg-white rounded-2xl border border-[#D8E7FA] shadow-2xs text-xs font-bold">

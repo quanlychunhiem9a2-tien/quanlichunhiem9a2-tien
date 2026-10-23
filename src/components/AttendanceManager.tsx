@@ -10,9 +10,12 @@ import {
   Search,
   Filter,
   Check,
-  RotateCcw
+  RotateCcw,
+  Lock,
+  Eye
 } from 'lucide-react';
 import { AppState, AttendanceStatus, StudentAttendanceDetail } from '../types';
+import { hasPermission, isReadOnly, isTeacher } from '../utils/permissionUtils';
 
 interface AttendanceManagerProps {
   appState: AppState;
@@ -80,8 +83,17 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({
     return { total: students.length, present, excused, unexcused, late };
   }, [students, localRecords]);
 
+  const canTakeAttendanceAny = hasPermission(appState, 'canTakeAttendance');
+  const readOnly = isReadOnly(appState);
+
   // Update single student
   const handleSetStatus = (studentId: string, status: AttendanceStatus) => {
+    const student = students.find((s) => s.id === studentId);
+    if (!hasPermission(appState, 'canTakeAttendance', student?.teamId)) {
+      alert('Bạn không có quyền điểm danh cho học sinh này (chỉ xem hoặc không thuộc phạm vi phụ trách).');
+      return;
+    }
+
     setLocalRecords((prev) => ({
       ...prev,
       [studentId]: {
@@ -94,6 +106,9 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({
   };
 
   const handleSetReason = (studentId: string, reason: string) => {
+    const student = students.find((s) => s.id === studentId);
+    if (!hasPermission(appState, 'canTakeAttendance', student?.teamId)) return;
+
     setLocalRecords((prev) => ({
       ...prev,
       [studentId]: {
@@ -104,6 +119,9 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({
   };
 
   const handleSetTime = (studentId: string, time: string) => {
+    const student = students.find((s) => s.id === studentId);
+    if (!hasPermission(appState, 'canTakeAttendance', student?.teamId)) return;
+
     setLocalRecords((prev) => ({
       ...prev,
       [studentId]: {
@@ -115,6 +133,10 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({
 
   // Mark all present
   const handleMarkAllPresent = () => {
+    if (!canTakeAttendanceAny) {
+      alert('Hệ thống đang ở chế độ Chỉ xem. Vui lòng đăng nhập tài khoản có thẩm quyền điểm danh!');
+      return;
+    }
     const updated: Record<string, StudentAttendanceDetail> = {};
     students.forEach((s) => {
       updated[s.id] = { status: 'present' };
@@ -124,6 +146,10 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({
 
   // Save to state
   const handleSaveAttendance = () => {
+    if (!canTakeAttendanceAny) {
+      alert('Hệ thống đang ở chế độ Chỉ xem. Vui lòng đăng nhập tài khoản có thẩm quyền để lưu điểm danh!');
+      return;
+    }
     onUpdateState((prev) => ({
       ...prev,
       attendanceHistory: {
@@ -195,15 +221,25 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({
 
           <button
             onClick={handleMarkAllPresent}
-            className="px-3.5 py-2 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 text-xs font-semibold text-[#17365D] flex items-center gap-1.5 transition-colors"
+            disabled={!canTakeAttendanceAny}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+              canTakeAttendanceAny
+                ? 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-[#17365D]'
+                : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
+            }`}
           >
-            <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
+            {!canTakeAttendanceAny ? <Lock className="w-3.5 h-3.5 text-gray-400" /> : <CheckCircle2 className="w-4 h-4 text-[#10B981]" />}
             Đánh dấu tất cả có mặt
           </button>
 
           <button
             onClick={handleSaveAttendance}
-            className="px-4 py-2 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-blue-500/20 transition-all"
+            disabled={!canTakeAttendanceAny}
+            className={`px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all ${
+              canTakeAttendanceAny
+                ? 'bg-[#1677E8] hover:bg-[#0B438A] shadow-blue-500/20'
+                : 'bg-gray-400 opacity-60 cursor-not-allowed'
+            }`}
           >
             {savedSuccess ? (
               <>
@@ -212,7 +248,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({
               </>
             ) : (
               <>
-                <Save className="w-4 h-4" />
+                {!canTakeAttendanceAny ? <Lock className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                 Lưu điểm danh
               </>
             )}
@@ -220,8 +256,23 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({
         </div>
       </div>
 
+      {/* View-Only Banner */}
+      {readOnly && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-center justify-between text-xs text-amber-900">
+          <div className="flex items-center gap-2.5">
+            <Eye className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              <strong>Giao diện đang ở chế độ Chỉ xem:</strong> Khách truy cập có thể theo dõi tỷ lệ chuyên cần và danh sách sĩ số. Để thực hiện điểm danh hoặc lưu thay đổi, vui lòng đăng nhập tài khoản <strong>Giáo viên chủ nhiệm</strong> hoặc <strong>Cán sự nề nếp / Tổ trưởng</strong>.
+            </span>
+          </div>
+          <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full shrink-0">
+            Chỉ xem
+          </span>
+        </div>
+      )}
+
       {/* Role permission info banner */}
-      {currentUser && currentUser.role !== 'teacher' && (
+      {!readOnly && currentUser && currentUser.role !== 'teacher' && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50/60 border border-blue-200 rounded-2xl p-3.5 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2.5">
             <CheckCircle2 className="w-4 h-4 text-[#1677E8]" />
@@ -410,6 +461,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({
             <tbody className="divide-y divide-gray-50">
               {filteredStudents.map((s, idx) => {
                 const current = localRecords[s.id] || { status: 'present' };
+                const canTakeThisStudent = hasPermission(appState, 'canTakeAttendance', s.teamId);
                 return (
                   <tr key={s.id} className="hover:bg-blue-50/30 transition-colors">
                     <td className="py-2.5 px-3.5 text-[#66809F] font-medium">{idx + 1}</td>
@@ -429,44 +481,52 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({
                     </td>
                     <td className="py-2.5 px-3.5 text-[#66809F]">Tổ {s.teamId}</td>
                     <td className="py-2.5 px-3.5 text-center">
-                      <div className="inline-flex items-center p-1 bg-gray-100/80 rounded-xl gap-1">
+                      <div className={`inline-flex items-center p-1 bg-gray-100/80 rounded-xl gap-1 ${!canTakeThisStudent ? 'cursor-not-allowed opacity-85' : ''}`}>
                         <button
                           onClick={() => handleSetStatus(s.id, 'present')}
+                          disabled={!canTakeThisStudent}
+                          title={!canTakeThisStudent ? "Chỉ xem (Cần đăng nhập GVCN hoặc cán sự có quyền)" : undefined}
                           className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
                             current.status === 'present'
                               ? 'bg-[#10B981] text-white shadow-xs'
                               : 'text-gray-600 hover:text-black'
-                          }`}
+                          } ${!canTakeThisStudent ? 'cursor-not-allowed' : ''}`}
                         >
                           Có mặt
                         </button>
                         <button
                           onClick={() => handleSetStatus(s.id, 'excused')}
+                          disabled={!canTakeThisStudent}
+                          title={!canTakeThisStudent ? "Chỉ xem (Cần đăng nhập GVCN hoặc cán sự có quyền)" : undefined}
                           className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
                             current.status === 'excused'
                               ? 'bg-[#F59E0B] text-white shadow-xs'
                               : 'text-gray-600 hover:text-black'
-                          }`}
+                          } ${!canTakeThisStudent ? 'cursor-not-allowed' : ''}`}
                         >
                           Nghỉ phép
                         </button>
                         <button
                           onClick={() => handleSetStatus(s.id, 'unexcused')}
+                          disabled={!canTakeThisStudent}
+                          title={!canTakeThisStudent ? "Chỉ xem (Cần đăng nhập GVCN hoặc cán sự có quyền)" : undefined}
                           className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
                             current.status === 'unexcused'
                               ? 'bg-[#EF4444] text-white shadow-xs'
                               : 'text-gray-600 hover:text-black'
-                          }`}
+                          } ${!canTakeThisStudent ? 'cursor-not-allowed' : ''}`}
                         >
                           Không phép
                         </button>
                         <button
                           onClick={() => handleSetStatus(s.id, 'late')}
+                          disabled={!canTakeThisStudent}
+                          title={!canTakeThisStudent ? "Chỉ xem (Cần đăng nhập GVCN hoặc cán sự có quyền)" : undefined}
                           className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
                             current.status === 'late'
                               ? 'bg-[#8B5CF6] text-white shadow-xs'
                               : 'text-gray-600 hover:text-black'
-                          }`}
+                          } ${!canTakeThisStudent ? 'cursor-not-allowed' : ''}`}
                         >
                           Đi trễ
                         </button>
@@ -477,34 +537,46 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({
                         <input
                           type="text"
                           placeholder="Nhập lý do nghỉ có phép..."
+                          disabled={!canTakeThisStudent}
                           value={current.reason || ''}
                           onChange={(e) => handleSetReason(s.id, e.target.value)}
-                          className="w-full px-2.5 py-1 rounded-lg border border-amber-200 bg-amber-50/40 text-xs text-[#17365D]"
+                          className={`w-full px-2.5 py-1 rounded-lg border text-xs ${
+                            !canTakeThisStudent ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : 'bg-amber-50/40 border-amber-200 text-[#17365D]'
+                          }`}
                         />
                       )}
                       {current.status === 'unexcused' && (
                         <input
                           type="text"
                           placeholder="Ghi chú (chưa xin phép/chưa liên lạc được)..."
+                          disabled={!canTakeThisStudent}
                           value={current.reason || ''}
                           onChange={(e) => handleSetReason(s.id, e.target.value)}
-                          className="w-full px-2.5 py-1 rounded-lg border border-red-200 bg-red-50/40 text-xs text-[#17365D]"
+                          className={`w-full px-2.5 py-1 rounded-lg border text-xs ${
+                            !canTakeThisStudent ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : 'bg-red-50/40 border-red-200 text-[#17365D]'
+                          }`}
                         />
                       )}
                       {current.status === 'late' && (
                         <div className="flex items-center gap-2">
                           <input
                             type="time"
+                            disabled={!canTakeThisStudent}
                             value={current.timeArrived || '07:30'}
                             onChange={(e) => handleSetTime(s.id, e.target.value)}
-                            className="px-2 py-1 rounded-lg border border-purple-200 bg-purple-50/40 text-xs font-mono"
+                            className={`px-2 py-1 rounded-lg border text-xs font-mono ${
+                              !canTakeThisStudent ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : 'bg-purple-50/40 border-purple-200'
+                            }`}
                           />
                           <input
                             type="text"
                             placeholder="Lý do đi trễ..."
+                            disabled={!canTakeThisStudent}
                             value={current.reason || ''}
                             onChange={(e) => handleSetReason(s.id, e.target.value)}
-                            className="w-full px-2 py-1 rounded-lg border border-purple-200 bg-purple-50/40 text-xs text-[#17365D]"
+                            className={`w-full px-2.5 py-1 rounded-lg border text-xs ${
+                              !canTakeThisStudent ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : 'bg-purple-50/40 border-purple-200 text-[#17365D]'
+                            }`}
                           />
                         </div>
                       )}

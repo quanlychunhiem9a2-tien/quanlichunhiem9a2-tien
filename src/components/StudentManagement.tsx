@@ -24,7 +24,9 @@ import {
   AlertTriangle,
   ClipboardPaste,
   FileDown,
-  Check
+  Check,
+  Lock,
+  Eye
 } from 'lucide-react';
 import { AppState, Student, SemesterTerm } from '../types';
 import {
@@ -33,6 +35,7 @@ import {
   defaultEvaluatedSubjects,
   getStudentSemesterRecord
 } from '../utils/tt22Evaluation';
+import { hasPermission, isReadOnly, isTeacher } from '../utils/permissionUtils';
 
 interface StudentManagementProps {
   appState: AppState;
@@ -448,8 +451,15 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     return matchSearch && matchTeam && matchRank && matchAward;
   });
 
+  const canManage = hasPermission(appState, 'canManageStudents');
+  const readOnly = isReadOnly(appState);
+
   // Batch auto-evaluate all students under TT22
   const handleBatchEvaluateTT22 = () => {
+    if (!canManage) {
+      alert('Hệ thống đang ở chế độ Chỉ xem (hoặc tài khoản hiện tại chưa được cấp quyền quản lý học sinh). Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm!');
+      return;
+    }
     onUpdateState((prev) => ({
       ...prev,
       students: prev.students.map(normalizeStudentTT22),
@@ -458,6 +468,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   };
 
   const handleOpenAdd = () => {
+    if (!canManage) {
+      alert('Hệ thống đang ở chế độ Chỉ xem. Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm để thêm học sinh mới!');
+      return;
+    }
     const newStudent: Student = {
       id: `hs-${Date.now()}`,
       code: `HS9A2-${String(students.length + 1).padStart(2, '0')}`,
@@ -492,6 +506,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   };
 
   const handleOpenEdit = (s: Student) => {
+    if (!canManage) {
+      alert('Hệ thống đang ở chế độ Chỉ xem. Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm để chỉnh sửa thông tin học sinh!');
+      return;
+    }
     setStudentToEdit({
       ...s,
       evaluatedSubjects: s.evaluatedSubjects || { ...defaultEvaluatedSubjects },
@@ -500,6 +518,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   };
 
   const handleSaveStudent = () => {
+    if (!canManage) {
+      alert('Bạn không có quyền lưu chỉnh sửa học sinh!');
+      return;
+    }
     if (!studentToEdit || !studentToEdit.fullName?.trim()) return;
 
     const normalized = normalizeStudentTT22(studentToEdit as Student);
@@ -525,6 +547,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   };
 
   const handleDeleteStudent = (id: string, name: string) => {
+    if (!canManage) {
+      alert('Hệ thống đang ở chế độ Chỉ xem. Chỉ có Giáo viên chủ nhiệm mới có quyền xóa học sinh khỏi danh sách!');
+      return;
+    }
     if (confirm(`Thầy có chắc chắn muốn xóa học sinh "${name}" khỏi danh sách lớp 9A2?`)) {
       onUpdateState((prev) => ({
         ...prev,
@@ -666,24 +692,32 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           {/* Add students from Excel button */}
           <button
             onClick={() => {
+              if (!canManage) {
+                alert('Hệ thống đang ở chế độ Chỉ xem. Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm để thêm học sinh bằng file Excel!');
+                return;
+              }
               setIsExcelImportOpen(true);
               setImportedPreview([]);
               setImportFileName('');
               setPasteContent('');
               setImportError(null);
             }}
-            className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 transition-all"
+            className={`px-3 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all ${
+              canManage ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20' : 'bg-gray-400 cursor-not-allowed opacity-80'
+            }`}
           >
-            <FileSpreadsheet className="w-4 h-4" />
+            {canManage ? <FileSpreadsheet className="w-4 h-4" /> : <Lock className="w-3.5 h-3.5" />}
             Thêm bằng file Excel
           </button>
 
           {/* Add student button */}
           <button
             onClick={handleOpenAdd}
-            className="px-3.5 py-2 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-blue-500/20 transition-all"
+            className={`px-3.5 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all ${
+              canManage ? 'bg-[#1677E8] hover:bg-[#0B438A] shadow-blue-500/20' : 'bg-gray-400 cursor-not-allowed opacity-80'
+            }`}
           >
-            <Plus className="w-4 h-4" />
+            {canManage ? <Plus className="w-4 h-4" /> : <Lock className="w-3.5 h-3.5" />}
             Thêm học sinh
           </button>
         </div>
@@ -804,20 +838,31 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         >
                           <UserCheck className="w-3.5 h-3.5" />
                         </button>
-                        <button
-                          onClick={() => handleOpenEdit(s)}
-                          title="Chỉnh sửa thông tin"
-                          className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteStudent(s.id, s.fullName)}
-                          title="Xóa học sinh"
-                          className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {canManage ? (
+                          <>
+                            <button
+                              onClick={() => handleOpenEdit(s)}
+                              title="Chỉnh sửa thông tin"
+                              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteStudent(s.id, s.fullName)}
+                              title="Xóa học sinh"
+                              className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        ) : (
+                          <span
+                            title="Chế độ chỉ xem - Cần quyền GVCN để sửa/xóa"
+                            className="p-1 rounded text-gray-400 cursor-not-allowed"
+                          >
+                            <Lock className="w-3.5 h-3.5" />
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>

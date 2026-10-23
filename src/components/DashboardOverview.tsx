@@ -15,9 +15,12 @@ import {
   Download,
   Calendar,
   Volume2,
-  BookOpen
+  BookOpen,
+  Lock,
+  Eye
 } from 'lucide-react';
 import { AppState, NavPage, Task } from '../types';
+import { isReadOnly, isTeacher, hasPermission } from '../utils/permissionUtils';
 
 interface DashboardOverviewProps {
   appState: AppState;
@@ -34,7 +37,10 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   onOpenQuickAction,
   onSelectStudent,
 }) => {
-  const { students, attendanceHistory, todayDate, tasks, notices } = appState;
+  const { students, attendanceHistory, todayDate, tasks, notices, currentUser } = appState;
+  const readOnly = isReadOnly(appState);
+  const isGVCN = isTeacher(appState);
+  const canToggle = hasPermission(appState, 'canToggleTasks');
 
   // Calculate live stats from today's attendance
   const todayRecord = attendanceHistory[todayDate] || {
@@ -91,11 +97,25 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               <Sun className="w-5 h-5 animate-spin-slow" />
             </div>
             <h1 className="text-xl lg:text-2xl font-extrabold text-[#17365D] tracking-tight">
-              Chào mừng thầy {appState.teacherName}!
+              {readOnly ? (
+                `Cổng Thông Tin Lớp ${appState.className} (Chế độ xem)`
+              ) : isGVCN ? (
+                `Chào mừng thầy ${appState.teacherName}!`
+              ) : (
+                `Xin chào ${currentUser?.name} (${currentUser?.roleTitle})!`
+              )}
             </h1>
           </div>
           <p className="text-sm text-[#66809F] font-medium leading-relaxed">
-            Chúc thầy một ngày làm việc hiệu quả. {appState.className} luôn là tập thể đoàn kết, tiến bộ!
+            {readOnly ? (
+              <span>
+                Hệ thống đang hiển thị ở <strong>chế độ Chỉ xem</strong>. Phụ huynh, học sinh và khách có thể theo dõi dữ liệu lớp. Để nhập hoặc chỉnh sửa, vui lòng đăng nhập tài khoản Giáo viên hoặc Cán sự lớp.
+              </span>
+            ) : isGVCN ? (
+              `Chúc thầy một ngày làm việc hiệu quả. ${appState.className} luôn là tập thể đoàn kết, tiến bộ!`
+            ) : (
+              `Bạn đang làm việc với các quyền hạn được Giáo viên chủ nhiệm ủy quyền theo dõi nề nếp và học tập của lớp.`
+            )}
           </p>
         </div>
 
@@ -616,15 +636,25 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               {tasks.slice(0, 5).map((t) => (
                 <div
                   key={t.id}
-                  onClick={() => onToggleTask(t.id)}
+                  onClick={() => {
+                    if (!canToggle) {
+                      alert('Chế độ Chỉ xem: Hãy đăng nhập tài khoản có thẩm quyền để cập nhật trạng thái công việc!');
+                      return;
+                    }
+                    onToggleTask(t.id);
+                  }}
                   className="py-2.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-blue-50/40 px-2 rounded-lg transition-colors group"
                 >
                   <div className="flex items-center gap-3">
                     <input
                       type="checkbox"
                       checked={t.completed}
-                      onChange={() => onToggleTask(t.id)}
-                      className="w-4 h-4 rounded text-[#1677E8] focus:ring-[#1677E8] cursor-pointer"
+                      disabled={!canToggle}
+                      onChange={() => {
+                        if (!canToggle) return;
+                        onToggleTask(t.id);
+                      }}
+                      className="w-4 h-4 rounded text-[#1677E8] focus:ring-[#1677E8] cursor-pointer disabled:cursor-not-allowed"
                     />
                     <span
                       className={`text-xs font-medium ${

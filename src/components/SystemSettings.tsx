@@ -66,6 +66,9 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingAccount, setEditingAccount] = useState<UserAccount | null>(null);
   const [accountToDelete, setAccountToDelete] = useState<UserAccount | null>(null);
+  const [accountToManagePassword, setAccountToManagePassword] = useState<UserAccount | null>(null);
+  const [managedNewPassword, setManagedNewPassword] = useState('');
+  const [newAccountPassword, setNewAccountPassword] = useState('123456');
 
   // Add Modal Form State
   const [newAccountSource, setNewAccountSource] = useState<'existing_student' | 'manual'>('existing_student');
@@ -269,6 +272,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
       studentId: selectedStudentId || undefined,
       avatar: newAccountAvatar,
       phone: newAccountPhone || undefined,
+      password: newAccountPassword.trim() || '123456',
     };
 
     const updatedAccounts = [...userAccounts, newAcc];
@@ -289,7 +293,42 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
     setSelectedStudentId('');
     setNewAccountName('');
     setNewAccountRoleTitle('');
-    alert(`Đã thêm thành công vai trò phân quyền: "${newAcc.roleTitle}" cho ${newAcc.name}!`);
+    setNewAccountPassword('123456');
+    alert(`Đã thêm thành công vai trò phân quyền: "${newAcc.roleTitle}" cho ${newAcc.name}! Mật khẩu đăng nhập: ${newAcc.password}`);
+  };
+
+  const handleSaveManagedPassword = (newPass: string) => {
+    if (!isGVCN) {
+      alert('Chỉ tài khoản Giáo viên chủ nhiệm mới có quyền thay đổi mật khẩu của các tài khoản khác!');
+      return;
+    }
+    if (!accountToManagePassword) return;
+    if (!newPass.trim() || newPass.trim().length < 4) {
+      alert('Mật khẩu phải có tối thiểu 4 ký tự!');
+      return;
+    }
+
+    const updatedAccounts = userAccounts.map((acc) => {
+      if (acc.id === accountToManagePassword.id) {
+        return { ...acc, password: newPass.trim() };
+      }
+      return acc;
+    });
+
+    let updatedCurrent = currentUser;
+    if (currentUser.id === accountToManagePassword.id) {
+      updatedCurrent = { ...currentUser, password: newPass.trim() };
+    }
+
+    onUpdateState((prev) => ({
+      ...prev,
+      userAccounts: updatedAccounts,
+      currentUser: updatedCurrent,
+    }));
+
+    alert(`Đã cập nhật mật khẩu cho "${accountToManagePassword.name}" (${accountToManagePassword.roleTitle}) thành công!`);
+    setAccountToManagePassword(null);
+    setManagedNewPassword('');
   };
 
   // Handle Delete Account
@@ -879,6 +918,18 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                               </button>
                             )}
 
+                            {/* Manage Password Button */}
+                            <button
+                              onClick={() => {
+                                setAccountToManagePassword(account);
+                                setManagedNewPassword(account.password || '123456');
+                              }}
+                              title="Xem / Đổi mật khẩu đăng nhập cho tài khoản này"
+                              className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 transition-colors"
+                            >
+                              <KeyRound className="w-3.5 h-3.5" />
+                            </button>
+
                             {/* Edit Detailed Permissions Button */}
                             <button
                               onClick={() => setEditingAccount(account)}
@@ -1296,6 +1347,25 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                     <option value="4">Tổ 4</option>
                   </select>
                 </div>
+
+                <div className="sm:col-span-2">
+                  <label className="font-semibold text-[#17365D] block mb-1 flex items-center justify-between">
+                    <span>Mật khẩu đăng nhập ban đầu:</span>
+                    <span className="text-[11px] text-[#66809F] font-normal italic">
+                      (Mặc định: 123456)
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newAccountPassword}
+                    onChange={(e) => setNewAccountPassword(e.target.value)}
+                    placeholder="Mặc định: 123456"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 font-mono text-xs"
+                  />
+                  <span className="text-[10.5px] text-[#66809F] block mt-0.5">
+                    Học sinh cần nhập mật khẩu này khi đăng nhập vào hệ thống để chỉnh sửa
+                  </span>
+                </div>
               </div>
 
               {/* Permission Presets */}
@@ -1705,6 +1775,102 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                   Lưu thay đổi quyền
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: MANAGE ACCOUNT PASSWORD (GVCN ADMIN) */}
+      {/* ========================================================================= */}
+      {accountToManagePassword && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full border border-amber-200 shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0 text-amber-700">
+                <KeyRound className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-[#17365D]">
+                  Quản lý Mật khẩu Tài khoản
+                </h3>
+                <p className="text-xs text-[#66809F]">
+                  Dành riêng cho Giáo viên chủ nhiệm thiết lập mã PIN / Mật khẩu
+                </p>
+              </div>
+            </div>
+
+            {/* Account Card */}
+            <div className="p-3 bg-amber-50/70 rounded-2xl border border-amber-200/80 flex items-center gap-3">
+              <img
+                src={accountToManagePassword.avatar}
+                alt=""
+                className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-2xs"
+              />
+              <div className="text-xs min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-extrabold text-[#17365D] text-sm truncate">
+                    {accountToManagePassword.name}
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded bg-amber-200 text-amber-900 text-[10px] font-bold">
+                    {accountToManagePassword.roleTitle}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#66809F] mt-0.5">
+                  {accountToManagePassword.teamId ? `Phụ trách: Tổ ${accountToManagePassword.teamId}` : 'Phạm vi toàn lớp'}
+                </p>
+              </div>
+            </div>
+
+            {/* Current Password Note */}
+            <div className="text-xs space-y-3">
+              <div>
+                <label className="font-bold text-[#17365D] block mb-1 flex items-center justify-between">
+                  <span>Mật khẩu / Mã PIN mới:</span>
+                  <button
+                    type="button"
+                    onClick={() => setManagedNewPassword('123456')}
+                    className="text-[11px] text-[#1677E8] hover:underline font-semibold"
+                  >
+                    Đặt lại về &quot;123456&quot;
+                  </button>
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={managedNewPassword}
+                    onChange={(e) => setManagedNewPassword(e.target.value)}
+                    placeholder="Nhập mật khẩu mới..."
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-xl font-mono text-xs focus:ring-2 focus:ring-[#1677E8]"
+                    required
+                  />
+                </div>
+                <p className="text-[11px] text-[#66809F] mt-1 italic">
+                  💡 Thầy/Cô có thể đặt mật khẩu ngắn gọn hoặc số PIN dễ nhớ (tối thiểu 4 ký tự) để giao cho học sinh.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setAccountToManagePassword(null);
+                  setManagedNewPassword('');
+                }}
+                className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#17365D] text-xs font-bold"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveManagedPassword(managedNewPassword)}
+                className="px-5 py-2 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
+              >
+                <Save className="w-4 h-4" />
+                Lưu mật khẩu
+              </button>
             </div>
           </div>
         </div>

@@ -8,9 +8,12 @@ import {
   X,
   Users,
   Eye,
+  EyeOff,
   AlertCircle,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  ChevronRight,
+  ArrowLeft
 } from 'lucide-react';
 import { UserAccount, AppState, RolePermissions } from '../types';
 
@@ -32,8 +35,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   reasonMessage,
 }) => {
   const [activeTab, setActiveTab] = useState<'teacher' | 'cadre'>('teacher');
-  const [teacherPin, setTeacherPin] = useState('123456');
-  const [pinError, setPinError] = useState(false);
+  const [teacherPin, setTeacherPin] = useState('');
+  const [showTeacherPin, setShowTeacherPin] = useState(false);
+  const [teacherPinError, setTeacherPinError] = useState<string | null>(null);
+
+  // Cadre state
+  const [selectedCadre, setSelectedCadre] = useState<UserAccount | null>(null);
+  const [cadrePassword, setCadrePassword] = useState('');
+  const [showCadrePassword, setShowCadrePassword] = useState(false);
+  const [cadrePasswordError, setCadrePasswordError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -46,24 +56,35 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     category: 'GVCN' as const,
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     phone: '0988776655',
+    password: '123456',
   };
 
   const cadreAccounts = userAccounts.filter((a) => a.role !== 'teacher');
 
   const handleTeacherSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Allow standard PIN 123456 or empty/any demo
-    if (teacherPin.trim() === '123456' || teacherPin.trim() === '') {
+    setTeacherPinError(null);
+    const expectedPin = teacherAccount.password || '123456';
+    if (teacherPin.trim() === expectedPin) {
       onLogin(teacherAccount);
       onClose();
     } else {
-      setPinError(true);
+      setTeacherPinError('Mã PIN/Mật khẩu GVCN không chính xác. Vui lòng kiểm tra lại!');
     }
   };
 
-  const handleSelectCadre = (account: UserAccount) => {
-    onLogin(account);
-    onClose();
+  const handleCadreSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCadre) return;
+    setCadrePasswordError(null);
+
+    const expectedPass = selectedCadre.password || '123456';
+    if (cadrePassword.trim() === expectedPass) {
+      onLogin(selectedCadre);
+      onClose();
+    } else {
+      setCadrePasswordError('Mật khẩu của ' + selectedCadre.roleTitle + ' không đúng. Vui lòng kiểm tra lại hoặc liên hệ GVCN!');
+    }
   };
 
   return (
@@ -103,7 +124,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         {/* Tab selection */}
         <div className="px-5 pt-3 flex items-center gap-2 border-b border-gray-100 bg-gray-50/60">
           <button
-            onClick={() => setActiveTab('teacher')}
+            onClick={() => {
+              setActiveTab('teacher');
+              setTeacherPinError(null);
+            }}
             className={`px-4 py-2 text-xs font-bold rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 ${
               activeTab === 'teacher'
                 ? 'bg-white text-[#1677E8] border-[#1677E8] shadow-2xs'
@@ -114,7 +138,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             Giáo viên chủ nhiệm
           </button>
           <button
-            onClick={() => setActiveTab('cadre')}
+            onClick={() => {
+              setActiveTab('cadre');
+              setCadrePasswordError(null);
+            }}
             className={`px-4 py-2 text-xs font-bold rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 ${
               activeTab === 'cadre'
                 ? 'bg-white text-emerald-700 border-emerald-600 shadow-2xs'
@@ -156,34 +183,43 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 <label className="font-bold text-[#17365D] block mb-1.5 flex items-center justify-between">
                   <span>Mã PIN / Mật khẩu GVCN:</span>
                   <span className="text-[11px] text-[#66809F] font-normal italic">
-                    (Mặc định demo: <strong>123456</strong>)
+                    (Mặc định ban đầu: <strong>123456</strong>)
                   </span>
                 </label>
                 <div className="relative">
                   <KeyRound className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
                   <input
-                    type="password"
+                    type={showTeacherPin ? 'text' : 'password'}
                     value={teacherPin}
                     onChange={(e) => {
                       setTeacherPin(e.target.value);
-                      setPinError(false);
+                      setTeacherPinError(null);
                     }}
-                    placeholder="Nhập 123456..."
-                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-xl font-mono text-sm focus:ring-2 focus:ring-[#1677E8] focus:border-transparent"
+                    placeholder="Nhập mật khẩu / PIN GVCN..."
+                    className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-xl font-mono text-sm focus:ring-2 focus:ring-[#1677E8] focus:border-transparent"
+                    required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowTeacherPin(!showTeacherPin)}
+                    className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                  >
+                    {showTeacherPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
-                {pinError && (
-                  <p className="text-rose-600 text-[11px] mt-1 font-medium">
-                    Mã PIN không đúng. Vui lòng nhập 123456 để tiếp tục!
+                {teacherPinError && (
+                  <p className="text-rose-600 text-[11px] mt-1.5 font-medium flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {teacherPinError}
                   </p>
                 )}
               </div>
 
               <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 space-y-1 text-[11px] text-[#66809F]">
                 <strong className="text-[#0B438A] block">Quyền hạn khi đăng nhập GVCN:</strong>
-                <p>• Thêm, sửa, xóa thông tin học sinh, nhập xuất Excel</p>
-                <p>• Nhập điểm theo HK1, HK2, Cả năm và tự động xếp loại TT22</p>
-                <p>• Điểm danh, ghi nhận thi đua, lập kế hoạch tuần, phân quyền cán sự</p>
+                <p>• Thêm, sửa, xóa học sinh, nhập xuất file Excel</p>
+                <p>• Nhập điểm HK1, HK2, Cả năm và tự động xếp loại TT22</p>
+                <p>• Cấu hình hệ thống, đổi mật khẩu và quản lý phân quyền cán sự</p>
               </div>
 
               <button
@@ -197,59 +233,171 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           )}
 
           {activeTab === 'cadre' && (
-            <div className="space-y-3">
-              <p className="text-[#66809F] text-[11px]">
-                Chọn tài khoản cán sự lớp để đăng nhập. Quyền thao tác sẽ được giới hạn chính xác theo ma trận phân quyền đã được GVCN cấp:
-              </p>
+            <div className="space-y-4">
+              {!selectedCadre ? (
+                <>
+                  <p className="text-[#66809F] text-[11px]">
+                    Chọn tài khoản cán sự lớp hoặc tổ trưởng. Đăng nhập yêu cầu <strong>nhập mật khẩu</strong> của từng tài khoản:
+                  </p>
 
-              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                {cadreAccounts.map((acc) => {
-                  const perms = appState.rolePermissions?.[acc.role];
-                  return (
-                    <div
-                      key={acc.id}
-                      className="p-3 bg-gray-50/80 hover:bg-blue-50/60 rounded-2xl border border-gray-200 transition-all flex items-center justify-between gap-3"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <img
-                          src={acc.avatar}
-                          alt={acc.name}
-                          className="w-9 h-9 rounded-full object-cover border border-gray-300 shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-[#17365D] text-xs truncate">
-                              {acc.name}
-                            </span>
-                            <span
-                              className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                                acc.category === 'Ban cán sự'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : 'bg-amber-100 text-amber-800'
-                              }`}
-                            >
-                              {acc.roleTitle}
-                            </span>
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {cadreAccounts.map((acc) => {
+                      const perms = appState.rolePermissions?.[acc.role];
+                      return (
+                        <div
+                          key={acc.id}
+                          className="p-3 bg-gray-50/80 hover:bg-emerald-50/60 rounded-2xl border border-gray-200 transition-all flex items-center justify-between gap-3"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <img
+                              src={acc.avatar}
+                              alt={acc.name}
+                              className="w-9 h-9 rounded-full object-cover border border-gray-300 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-[#17365D] text-xs truncate">
+                                  {acc.name}
+                                </span>
+                                <span
+                                  className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                                    acc.category === 'Ban cán sự'
+                                      ? 'bg-emerald-100 text-emerald-800'
+                                      : 'bg-amber-100 text-amber-800'
+                                  }`}
+                                >
+                                  {acc.roleTitle}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-[#66809F] truncate mt-0.5">
+                                {acc.teamId ? `Tổ ${acc.teamId} • ` : ''}
+                                {perms?.canTakeAttendance ? '✓ Điểm danh ' : ''}
+                                {perms?.canRecordEmulation ? '✓ Thi đua ' : ''}
+                                {perms?.canProposePlanTask ? '✓ Kế hoạch' : ''}
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-[10px] text-[#66809F] truncate mt-0.5">
-                            {acc.teamId ? `Tổ ${acc.teamId} • ` : ''}
-                            {perms?.canTakeAttendance ? '✓ Điểm danh ' : ''}
-                            {perms?.canRecordEmulation ? '✓ Thi đua ' : ''}
-                            {perms?.canProposePlanTask ? '✓ Kế hoạch' : ''}
-                          </p>
-                        </div>
-                      </div>
 
+                          <button
+                            onClick={() => {
+                              setSelectedCadre(acc);
+                              setCadrePassword('');
+                              setCadrePasswordError(null);
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 font-bold text-xs flex items-center gap-1 transition-all shrink-0 shadow-2xs"
+                          >
+                            Đăng nhập <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <form onSubmit={handleCadreSubmit} className="space-y-4">
+                  {/* Selected Cadre Card */}
+                  <div className="p-3.5 bg-emerald-50/80 rounded-2xl border border-emerald-200 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={selectedCadre.avatar}
+                        alt={selectedCadre.name}
+                        className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-2xs"
+                      />
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="font-extrabold text-[#17365D] text-xs">
+                            {selectedCadre.name}
+                          </h4>
+                          <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 font-bold text-[10px] rounded">
+                            {selectedCadre.roleTitle}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-emerald-900 mt-0.5">
+                          {selectedCadre.teamId ? `Phụ trách Tổ ${selectedCadre.teamId}` : 'Ban cán sự lớp 9A2'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCadre(null);
+                        setCadrePassword('');
+                        setCadrePasswordError(null);
+                      }}
+                      className="text-[11px] text-[#1677E8] hover:underline font-bold flex items-center gap-1"
+                    >
+                      <ArrowLeft className="w-3 h-3" /> Đổi vai trò
+                    </button>
+                  </div>
+
+                  {/* Password Input for Cadre */}
+                  <div>
+                    <label className="font-bold text-[#17365D] block mb-1.5 flex items-center justify-between">
+                      <span>Mật khẩu của {selectedCadre.roleTitle}:</span>
+                      <span className="text-[11px] text-[#66809F] font-normal italic">
+                        (Mặc định: <strong>123456</strong>)
+                      </span>
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                      <input
+                        type={showCadrePassword ? 'text' : 'password'}
+                        value={cadrePassword}
+                        onChange={(e) => {
+                          setCadrePassword(e.target.value);
+                          setCadrePasswordError(null);
+                        }}
+                        placeholder="Nhập mật khẩu để đăng nhập..."
+                        autoFocus
+                        className="w-full pl-9 pr-10 py-2.5 border border-gray-300 rounded-xl font-mono text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        required
+                      />
                       <button
-                        onClick={() => handleSelectCadre(acc)}
-                        className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#1677E8] text-[#1677E8] hover:text-white border border-[#D8E7FA] font-bold text-xs flex items-center gap-1 transition-all shrink-0 shadow-2xs"
+                        type="button"
+                        onClick={() => setShowCadrePassword(!showCadrePassword)}
+                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
                       >
-                        Chọn <ArrowRight className="w-3 h-3" />
+                        {showCadrePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                  );
-                })}
-              </div>
+
+                    {cadrePasswordError && (
+                      <p className="text-rose-600 text-[11px] mt-1.5 font-medium flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        {cadrePasswordError}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Scope note */}
+                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 text-[11px] text-[#66809F] space-y-1">
+                    <p className="font-bold text-[#17365D]">Phạm vi quyền hạn được ủy quyền:</p>
+                    <p>
+                      • {appState.rolePermissions?.[selectedCadre.role]?.canTakeAttendance
+                        ? `Được điểm danh (${appState.rolePermissions?.[selectedCadre.role]?.attendanceScope === 'own_team' ? `Tổ ${selectedCadre.teamId}` : 'Toàn lớp'})`
+                        : 'Không có quyền điểm danh'}
+                    </p>
+                    <p>
+                      • {appState.rolePermissions?.[selectedCadre.role]?.canRecordEmulation
+                        ? `Được ghi điểm thi đua (${appState.rolePermissions?.[selectedCadre.role]?.emulationScope === 'own_team' ? `Tổ ${selectedCadre.teamId}` : 'Toàn lớp'})`
+                        : 'Không có quyền ghi thi đua'}
+                    </p>
+                    <p>
+                      • {appState.rolePermissions?.[selectedCadre.role]?.canProposePlanTask
+                        ? 'Được đề xuất nhiệm vụ tuần'
+                        : 'Chỉ xem kế hoạch'}
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                  >
+                    <Lock className="w-4 h-4" />
+                    Xác nhận đăng nhập ({selectedCadre.roleTitle})
+                  </button>
+                </form>
+              )}
             </div>
           )}
         </div>

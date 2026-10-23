@@ -198,6 +198,7 @@ export interface UserAccount {
   studentId?: string;
   avatar: string;
   phone?: string;
+  password?: string; // Mật khẩu / mã PIN đăng nhập (mặc định: '123456')
 }
 
 export interface RolePermissions {

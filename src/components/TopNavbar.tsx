@@ -13,12 +13,14 @@ import {
   LogOut,
   Eye,
   Shield,
-  ShieldAlert
+  ShieldAlert,
+  KeyRound
 } from 'lucide-react';
 import { AppState, NavPage, UserAccount } from '../types';
 import { guestUserAccount } from '../mockData';
 import { isReadOnly, isTeacher, getUserRoleDescription } from '../utils/permissionUtils';
 import { LoginModal } from './LoginModal';
+import { ChangePasswordModal } from './ChangePasswordModal';
 
 interface TopNavbarProps {
   appState: AppState;
@@ -39,6 +41,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
   const [showYearDropdown, setShowYearDropdown] = useState(false);
   const [showTeacherMenu, setShowTeacherMenu] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
   const classOptions = ['Lớp 9A1', 'Lớp 9A2', 'Lớp 9A3', 'Lớp 8A1', 'Lớp 8A2'];
   const yearOptions = ['Năm học 2026 - 2027', 'Năm học 2025 - 2026'];
@@ -307,6 +310,18 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
                       </button>
                     )}
 
+                    {/* Đổi mật khẩu tài khoản */}
+                    <button
+                      onClick={() => {
+                        setShowChangePasswordModal(true);
+                        setShowTeacherMenu(false);
+                      }}
+                      className="w-full px-3 py-2 rounded-xl text-left hover:bg-amber-50 text-[#17365D] flex items-center gap-2 font-semibold"
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-amber-600" />
+                      Đổi mật khẩu tài khoản
+                    </button>
+
                     <button
                       onClick={handleLogout}
                       className="w-full px-3 py-2 rounded-xl text-left hover:bg-rose-50 text-rose-600 flex items-center gap-2 font-bold"
@@ -358,6 +373,14 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
             currentUser: guestUserAccount,
           }));
         }}
+      />
+
+      {/* Global Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+        appState={appState}
+        onUpdateState={onUpdateState}
       />
     </>
   );

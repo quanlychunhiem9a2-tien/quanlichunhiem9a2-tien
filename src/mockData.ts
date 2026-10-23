@@ -1170,6 +1170,7 @@ export const initialUserAccounts: UserAccount[] = [
     category: 'GVCN',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     phone: '0988776655',
+    password: '123456',
   },
   {
     id: 'user-lt',
@@ -1181,6 +1182,7 @@ export const initialUserAccounts: UserAccount[] = [
     studentId: 'hs-01',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     phone: '0912345678',
+    password: '123456',
   },
   {
     id: 'user-lp-ht',
@@ -1192,6 +1194,7 @@ export const initialUserAccounts: UserAccount[] = [
     studentId: 'hs-02',
     avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
     phone: '0987654321',
+    password: '123456',
   },
   {
     id: 'user-lp-nn',
@@ -1203,6 +1206,7 @@ export const initialUserAccounts: UserAccount[] = [
     studentId: 'hs-05',
     avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
     phone: '0977889900',
+    password: '123456',
   },
   {
     id: 'user-tt1',
@@ -1214,6 +1218,7 @@ export const initialUserAccounts: UserAccount[] = [
     studentId: 'hs-06',
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
     phone: '0933445566',
+    password: '123456',
   },
   {
     id: 'user-tt2',
@@ -1225,6 +1230,7 @@ export const initialUserAccounts: UserAccount[] = [
     studentId: 'hs-03',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
     phone: '0901234567',
+    password: '123456',
   },
   {
     id: 'user-tt3',
@@ -1236,6 +1242,7 @@ export const initialUserAccounts: UserAccount[] = [
     studentId: 'hs-07',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     phone: '0944556677',
+    password: '123456',
   },
   {
     id: 'user-tt4',
@@ -1247,6 +1254,7 @@ export const initialUserAccounts: UserAccount[] = [
     studentId: 'hs-08',
     avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
     phone: '0955667788',
+    password: '123456',
   },
 ];
 

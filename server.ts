@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
+import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
 
@@ -15,6 +16,16 @@ const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 const DATA_DIR = path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
+
+// Supabase configuration
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://nkzxtdjmhbspdilhugvw.supabase.co';
+const SUPABASE_ANON_KEY =
+  process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_yo_IOqUPF4HuKBm6b67kPg_gkFkrJRc';
+const APP_STATE_ROW_ID = 'main_class_9a2';
+
+const supabaseServer = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: false },
+});
 
 app.use(express.json({ limit: '10mb' }));
 
@@ -41,8 +52,8 @@ if (apiKey) {
   }
 }
 
-// Helper to read DB
-function readDatabase(): any {
+// Helper to read local fallback DB
+function readLocalDatabase(): any {
   try {
     if (fs.existsSync(DB_FILE)) {
       const content = fs.readFileSync(DB_FILE, 'utf-8');
@@ -54,8 +65,8 @@ function readDatabase(): any {
   return null;
 }
 
-// Helper to write DB
-function writeDatabase(data: any) {
+// Helper to write local fallback DB
+function writeLocalDatabase(data: any) {
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
     return true;
@@ -67,31 +78,75 @@ function writeDatabase(data: any) {
 
 // API Routes
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', hasGeminiKey: Boolean(process.env.GEMINI_API_KEY) });
+  res.json({
+    status: 'ok',
+    hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
+    supabaseUrl: SUPABASE_URL,
+  });
 });
 
-// GET all state
-app.get('/api/db', (req, res) => {
-  const data = readDatabase();
-  res.json({ success: true, data });
+// GET all state (Supabase primary, local db.json fallback)
+app.get('/api/db', async (req, res) => {
+  try {
+    const { data, error } = await supabaseServer
+      .from('app_state')
+      .select('data')
+      .eq('id', APP_STATE_ROW_ID)
+      .maybeSingle();
+
+    if (!error && data && data.data) {
+      writeLocalDatabase(data.data);
+      return res.json({ success: true, source: 'supabase', data: data.data });
+    }
+  } catch (err) {
+    console.warn('Supabase GET fallback to local db.json:', err);
+  }
+
+  const localData = readLocalDatabase();
+  res.json({ success: true, source: 'local', data: localData });
 });
 
-// POST sync state
-app.post('/api/db', (req, res) => {
+// POST sync state (Write to both Supabase and local db.json)
+app.post('/api/db', async (req, res) => {
   const data = req.body;
   if (!data) {
     return res.status(400).json({ error: 'No data provided' });
   }
-  const ok = writeDatabase(data);
-  res.json({ success: ok });
+
+  const localOk = writeLocalDatabase(data);
+  let supabaseOk = false;
+
+  try {
+    const nowISO = new Date().toISOString();
+    const { error } = await supabaseServer.from('app_state').upsert(
+      {
+        id: APP_STATE_ROW_ID,
+        class_name: data.className || 'Lớp 9A2',
+        academic_year: data.academicYear || 'Năm học 2026 - 2027',
+        teacher_name: data.teacherName || 'Trần Văn Tiến',
+        student_count: Array.isArray(data.students) ? data.students.length : 0,
+        data,
+        updated_at: nowISO,
+      },
+      { onConflict: 'id' }
+    );
+    if (!error) {
+      supabaseOk = true;
+    }
+  } catch (err) {
+    // Ignore if table not yet initialized
+  }
+
+  res.json({ success: localOk || supabaseOk, supabaseSynced: supabaseOk });
 });
 
 // POST reset to defaults
-app.post('/api/db/reset', (req, res) => {
+app.post('/api/db/reset', async (req, res) => {
   try {
     if (fs.existsSync(DB_FILE)) {
       fs.unlinkSync(DB_FILE);
     }
+    await supabaseServer.from('app_state').delete().eq('id', APP_STATE_ROW_ID);
     res.json({ success: true, message: 'Database reset to initial defaults' });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -107,10 +162,10 @@ app.post('/api/gemini/chat', async (req, res) => {
     }
 
     if (!aiClient) {
-      // Return a structured fallback response if Gemini key is not configured
       return res.json({
         success: true,
-        text: `[Chế độ AI ngoại tuyến / Chưa cấu hình GEMINI_API_KEY]\n\nXin chào Thầy Trần Văn Tiến! Dưới đây là phản hồi gợi ý theo quy chuẩn công tác chủ nhiệm lớp 9A2:\n\n` +
+        text:
+          `[Chế độ AI ngoại tuyến / Chưa cấu hình GEMINI_API_KEY]\n\nXin chào Thầy Trần Văn Tiến! Dưới đây là phản hồi gợi ý theo quy chuẩn công tác chủ nhiệm lớp 9A2:\n\n` +
           `• Về yêu cầu: "${message}"\n` +
           `• Gợi ý thực hiện:\n` +
           `  1. Kế hoạch tuần: Tập trung đôn đốc nề nếp truy bài đầu giờ, nhắc nhở học sinh chuẩn bị bài cho đợt kiểm tra giữa kỳ.\n` +
@@ -147,7 +202,7 @@ Phong cách của bạn:
     console.error('Gemini chat error:', error);
     res.status(500).json({
       error: error.message || 'Lỗi khi kết nối với AI Gemini',
-      fallbackText: 'Đã xảy ra lỗi khi kết nối với dịch vụ AI. Vui lòng thử lại sau giây lát.'
+      fallbackText: 'Đã xảy ra lỗi khi kết nối với dịch vụ AI. Vui lòng thử lại sau giây lát.',
     });
   }
 });

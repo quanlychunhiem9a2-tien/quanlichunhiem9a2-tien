@@ -30,11 +30,13 @@ import {
   Info,
   SlidersHorizontal,
   Lock,
-  Eye
+  Eye,
+  Database
 } from 'lucide-react';
 import { AppState, UserRole, RolePermissions, UserAccount, Student } from '../types';
 import { initialUserAccounts, defaultRolePermissions } from '../mockData';
 import { hasPermission, isReadOnly, isTeacher } from '../utils/permissionUtils';
+import { SupabaseConnectPanel } from './SupabaseConnectPanel';
 
 interface SystemSettingsProps {
   appState: AppState;
@@ -646,8 +648,11 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
               : 'text-[#66809F] hover:bg-gray-100'
           }`}
         >
-          <Download className="w-4 h-4" />
-          <span>Sao lưu & Khôi phục</span>
+          <Database className="w-4 h-4" />
+          <span>Kết nối Supabase & Sao lưu</span>
+          <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">
+            Cloud
+          </span>
         </button>
       </div>
 
@@ -1145,59 +1150,67 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
         </div>
       )}
 
-      {/* TAB 4: BACKUP & RESTORE */}
+      {/* TAB 4: BACKUP & RESTORE + SUPABASE */}
       {activeTab === 'backup' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Backup & Restore */}
-          <div className="bg-white rounded-2xl border border-[#D8E7FA] shadow-xs p-6 space-y-4 text-xs">
-            <h3 className="font-extrabold text-sm text-[#17365D] flex items-center gap-2">
-              <Download className="w-4 h-4 text-[#1677E8]" />
-              Sao lưu & Khôi phục dữ liệu
-            </h3>
-            <p className="text-[#66809F]">
-              Tải về toàn bộ cơ sở dữ liệu học sinh, điểm danh, thi đua và kế hoạch dưới dạng file JSON hoặc khôi phục từ tệp trước đó.
-            </p>
+        <div className="space-y-5">
+          <SupabaseConnectPanel
+            appState={appState}
+            onUpdateState={onUpdateState}
+            isGVCN={isGVCN}
+          />
 
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              <button
-                onClick={handleBackupJSON}
-                className="px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1677E8] font-bold flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Tải tệp sao lưu JSON
-              </button>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* Backup & Restore */}
+            <div className="bg-white rounded-2xl border border-[#D8E7FA] shadow-xs p-6 space-y-4 text-xs">
+              <h3 className="font-extrabold text-sm text-[#17365D] flex items-center gap-2">
+                <Download className="w-4 h-4 text-[#1677E8]" />
+                Sao lưu & Khôi phục dữ liệu (Tệp JSON máy tính)
+              </h3>
+              <p className="text-[#66809F]">
+                Tải về toàn bộ cơ sở dữ liệu học sinh, điểm danh, thi đua và kế hoạch dưới dạng file JSON hoặc khôi phục từ tệp trước đó.
+              </p>
 
-              <label className="px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#17365D] font-bold flex items-center gap-2 cursor-pointer">
-                <Upload className="w-4 h-4" />
-                <span>Phục hồi từ JSON</span>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleRestoreJSON}
-                  className="hidden"
-                />
-              </label>
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <button
+                  onClick={handleBackupJSON}
+                  className="px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1677E8] font-bold flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Tải tệp sao lưu JSON
+                </button>
+
+                <label className="px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#17365D] font-bold flex items-center gap-2 cursor-pointer">
+                  <Upload className="w-4 h-4" />
+                  <span>Phục hồi từ JSON</span>
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleRestoreJSON}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             </div>
-          </div>
 
-          {/* Reset & Privacy */}
-          <div className="bg-white rounded-2xl border border-[#D8E7FA] shadow-xs p-6 space-y-4 text-xs">
-            <h3 className="font-extrabold text-sm text-[#17365D] flex items-center gap-2">
-              <RotateCcw className="w-4 h-4 text-amber-500" />
-              Khởi tạo lại & Bảo mật
-            </h3>
-            <p className="text-[#66809F]">
-              Khi bắt đầu lớp học thực tế hoặc muốn khôi phục về bộ dữ liệu mẫu chuẩn của lớp 9A2 (38 học sinh, sĩ số 34 có mặt).
-            </p>
+            {/* Reset & Privacy */}
+            <div className="bg-white rounded-2xl border border-[#D8E7FA] shadow-xs p-6 space-y-4 text-xs">
+              <h3 className="font-extrabold text-sm text-[#17365D] flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-amber-500" />
+                Khởi tạo lại & Bảo mật
+              </h3>
+              <p className="text-[#66809F]">
+                Khi bắt đầu lớp học thực tế hoặc muốn khôi phục về bộ dữ liệu mẫu chuẩn của lớp 9A2 (38 học sinh, sĩ số 34 có mặt).
+              </p>
 
-            <div className="pt-2">
-              <button
-                onClick={handleConfirmReset}
-                className="px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold flex items-center gap-2 transition-colors"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Khởi tạo lại dữ liệu ban đầu
-              </button>
+              <div className="pt-2">
+                <button
+                  onClick={handleConfirmReset}
+                  className="px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold flex items-center gap-2 transition-colors"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Khởi tạo lại dữ liệu ban đầu
+                </button>
+              </div>
             </div>
           </div>
         </div>

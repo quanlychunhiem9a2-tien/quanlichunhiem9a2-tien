@@ -2,6 +2,7 @@ import { AppState, HomeroomPlan } from './types';
 import { defaultAppState, guestUserAccount } from './mockData';
 import { normalizeStudentTT22 } from './utils/tt22Evaluation';
 import { getCurrentSchoolWeekInfo, getSchoolWeekMeta } from './utils/dateWeekUtils';
+import { fetchFromSupabase, syncToSupabase } from './lib/supabase';
 
 const STORAGE_KEY = 'gvcn_ai_app_state_v2';
 const SESSION_USER_KEY = 'gvcn_ai_session_user_v2';
@@ -28,78 +29,83 @@ function getSessionUser() {
   return guestUserAccount;
 }
 
+function hydrateAppState(rawData: Partial<AppState>, activeUser: any, latestWeek: { currentWeek: number; todayISO: string }): AppState {
+  const rawStudents = Array.isArray(rawData.students) ? rawData.students : defaultAppState.students;
+  const rawPlans = Array.isArray(rawData.plans) ? rawData.plans : defaultAppState.plans;
+  const resolvedWeek =
+    !rawData.currentEmulationWeek ||
+    rawData.currentEmulationWeek === 2 ||
+    rawData.currentEmulationWeek === 8
+      ? latestWeek.currentWeek
+      : rawData.currentEmulationWeek;
+  const resolvedToday =
+    !rawData.todayDate || rawData.todayDate === '2026-09-11'
+      ? latestWeek.todayISO
+      : rawData.todayDate;
+
+  return {
+    ...defaultAppState,
+    ...rawData,
+    todayDate: resolvedToday,
+    currentEmulationWeek: resolvedWeek,
+    plans: rawPlans.map(normalizePlanWeekDates),
+    students: rawStudents.map(normalizeStudentTT22),
+    currentUser: activeUser,
+    userAccounts: rawData.userAccounts || defaultAppState.userAccounts,
+    rolePermissions: rawData.rolePermissions || defaultAppState.rolePermissions,
+  };
+}
+
 export async function fetchAppState(): Promise<AppState> {
   const activeUser = getSessionUser();
   const latestWeek = getCurrentSchoolWeekInfo();
 
+  // 1. Ưu tiên đọc trực tiếp từ Supabase Cloud
+  try {
+    const supabaseData = await fetchFromSupabase();
+    if (supabaseData && Array.isArray(supabaseData.students)) {
+      const hydrated = hydrateAppState(supabaseData, activeUser, latestWeek);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(hydrated));
+      } catch (e) {
+        // ignore
+      }
+      return hydrated;
+    }
+  } catch (err) {
+    console.warn('Supabase direct fetch skipped, trying API backend', err);
+  }
+
+  // 2. Đọc từ Backend Server (/api/db - cũng được kết nối với Supabase & db.json)
   try {
     const res = await fetch('/api/db');
     if (res.ok) {
       const json = await res.json();
       if (json && json.data) {
-        const rawStudents = Array.isArray(json.data.students) ? json.data.students : defaultAppState.students;
-        const rawPlans = Array.isArray(json.data.plans) ? json.data.plans : defaultAppState.plans;
-        const resolvedWeek =
-          !json.data.currentEmulationWeek ||
-          json.data.currentEmulationWeek === 2 ||
-          json.data.currentEmulationWeek === 8
-            ? latestWeek.currentWeek
-            : json.data.currentEmulationWeek;
-        const resolvedToday =
-          !json.data.todayDate || json.data.todayDate === '2026-09-11'
-            ? latestWeek.todayISO
-            : json.data.todayDate;
-        return {
-          ...defaultAppState,
-          ...json.data,
-          todayDate: resolvedToday,
-          currentEmulationWeek: resolvedWeek,
-          plans: rawPlans.map(normalizePlanWeekDates),
-          students: rawStudents.map(normalizeStudentTT22),
-          currentUser: activeUser,
-          userAccounts: json.data.userAccounts || defaultAppState.userAccounts,
-          rolePermissions: json.data.rolePermissions || defaultAppState.rolePermissions,
-        };
+        const hydrated = hydrateAppState(json.data, activeUser, latestWeek);
+        // Nếu Supabase đã sẵn sàng nhưng chưa có bản ghi, tự động đồng bộ lên
+        syncToSupabase(hydrated).catch(() => {});
+        return hydrated;
       }
     }
   } catch (err) {
     console.warn('API db fetch failed, checking localStorage fallback', err);
   }
 
-  // Fallback to localStorage
+  // 3. Fallback đọc từ LocalStorage trên trình duyệt
   try {
     const local = localStorage.getItem(STORAGE_KEY);
     if (local) {
       const parsed = JSON.parse(local);
-      const rawStudents = Array.isArray(parsed.students) ? parsed.students : defaultAppState.students;
-      const rawPlans = Array.isArray(parsed.plans) ? parsed.plans : defaultAppState.plans;
-      const resolvedWeek =
-        !parsed.currentEmulationWeek ||
-        parsed.currentEmulationWeek === 2 ||
-        parsed.currentEmulationWeek === 8
-          ? latestWeek.currentWeek
-          : parsed.currentEmulationWeek;
-      const resolvedToday =
-        !parsed.todayDate || parsed.todayDate === '2026-09-11'
-          ? latestWeek.todayISO
-          : parsed.todayDate;
-      return {
-        ...defaultAppState,
-        ...parsed,
-        todayDate: resolvedToday,
-        currentEmulationWeek: resolvedWeek,
-        plans: rawPlans.map(normalizePlanWeekDates),
-        students: rawStudents.map(normalizeStudentTT22),
-        currentUser: activeUser,
-        userAccounts: parsed.userAccounts || defaultAppState.userAccounts,
-        rolePermissions: parsed.rolePermissions || defaultAppState.rolePermissions,
-      };
+      const hydrated = hydrateAppState(parsed, activeUser, latestWeek);
+      syncToSupabase(hydrated).catch(() => {});
+      return hydrated;
     }
   } catch (e) {
     console.error('LocalStorage read error:', e);
   }
 
-  // Save initial default
+  // 4. Khởi tạo mặc định lần đầu và đồng bộ lên Supabase + Backend
   const normalizedDefault: AppState = {
     ...defaultAppState,
     currentUser: activeUser,
@@ -126,18 +132,19 @@ export async function saveAppState(state: AppState): Promise<boolean> {
     console.error('LocalStorage write error:', e);
   }
 
-  // Sync to server backend
-  try {
-    const res = await fetch('/api/db', {
+  // Đồng bộ trực tiếp lên Supabase Cloud + Server Backend song song
+  const [supabaseResult, backendOk] = await Promise.all([
+    syncToSupabase(state).catch(() => ({ ok: false })),
+    fetch('/api/db', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(state),
-    });
-    return res.ok;
-  } catch (err) {
-    console.warn('API db write failed, state saved locally', err);
-    return false;
-  }
+    })
+      .then((res) => res.ok)
+      .catch(() => false),
+  ]);
+
+  return Boolean(supabaseResult.ok || backendOk);
 }
 
 export async function resetAppState(): Promise<AppState> {

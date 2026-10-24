@@ -16,7 +16,8 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  ClipboardCheck
+  ClipboardCheck,
+  Trash2
 } from 'lucide-react';
 import { AppState, Student, WeeklyDutyRoster, DutyDayAssignment, EmulationRecord } from '../types';
 import { getSchoolWeekMeta, getCurrentSchoolWeekInfo } from '../utils/dateWeekUtils';
@@ -104,10 +105,21 @@ export const WeeklyDutyRosterPanel: React.FC<WeeklyDutyRosterPanelProps> = ({
     }));
   };
 
-  // All members of the assigned duty team
-  const dutyTeamMembers = useMemo(
+  // All members of the assigned duty team (including any excluded ones, for dropdown re-selection)
+  const allTeamMembers = useMemo(
     () => students.filter((s) => s.teamId === currentRoster.teamId),
     [students, currentRoster.teamId]
+  );
+
+  const excludedIdSet = useMemo(
+    () => new Set(currentRoster.excludedStudentIds || []),
+    [currentRoster.excludedStudentIds]
+  );
+
+  // Active members shown in the weekly duty participant list
+  const dutyTeamMembers = useMemo(
+    () => allTeamMembers.filter((s) => !excludedIdSet.has(s.id)),
+    [allTeamMembers, excludedIdSet]
   );
 
   // Map studentId -> Student
@@ -131,6 +143,47 @@ export const WeeklyDutyRosterPanel: React.FC<WeeklyDutyRosterPanelProps> = ({
     return map;
   }, [currentRoster]);
 
+  // Members in the active duty list who currently have no assigned days (when list changes)
+  const unassignedMembers = useMemo(
+    () => dutyTeamMembers.filter((m) => (memberDutyDaysMap[m.id] || []).length === 0),
+    [dutyTeamMembers, memberDutyDaysMap]
+  );
+
+  // Remove a student completely from this week's duty roster list
+  const handleRemoveMemberFromWeeklyRoster = (studentId: string) => {
+    if (!canEditRoster) return;
+    const studentName = studentMap[studentId]?.fullName || 'Học sinh';
+    const currentExcluded = currentRoster.excludedStudentIds || [];
+    const nextExcluded = currentExcluded.includes(studentId)
+      ? currentExcluded
+      : [...currentExcluded, studentId];
+    const updatedDays = currentRoster.days.map((d) => ({
+      ...d,
+      studentIds: d.studentIds.filter((id) => id !== studentId),
+    }));
+    saveRosterForWeek({
+      ...currentRoster,
+      excludedStudentIds: nextExcluded,
+      days: updatedDays,
+    });
+    notify(`Đã xóa ${studentName} khỏi danh sách trực nhật Tuần ${selectedWeek}.`);
+  };
+
+  // Remove all unassigned members from this week's duty participant list
+  const handleRemoveAllUnassignedMembers = () => {
+    if (!canEditRoster || unassignedMembers.length === 0) return;
+    const unassignedIds = unassignedMembers.map((m) => m.id);
+    const currentExcluded = currentRoster.excludedStudentIds || [];
+    const nextExcluded = Array.from(new Set([...currentExcluded, ...unassignedIds]));
+    saveRosterForWeek({
+      ...currentRoster,
+      excludedStudentIds: nextExcluded,
+    });
+    notify(
+      `Đã xóa ${unassignedIds.length} học sinh chưa phân công khỏi danh sách trực nhật Tuần ${selectedWeek}.`
+    );
+  };
+
   // Switch the duty team for this week and auto-distribute its members
   const handleChangeDutyTeam = (newTeamId: number) => {
     if (!canChangeDutyTeam) return;
@@ -148,7 +201,7 @@ export const WeeklyDutyRosterPanel: React.FC<WeeklyDutyRosterPanelProps> = ({
 
   // Auto-redistribute members of the current duty team
   const handleAutoRedistribute = () => {
-    if (!canChangeDutyTeam) return;
+    if (!canChangeDutyTeam && !canEditRoster) return;
     const regenerated = buildWeeklyDutyRoster(
       selectedWeek,
       students,
@@ -163,6 +216,7 @@ export const WeeklyDutyRosterPanel: React.FC<WeeklyDutyRosterPanelProps> = ({
 
   // Remove a student from a specific day
   const handleRemoveStudentFromDay = (dayIdx: number, studentId: string) => {
+    if (!canEditRoster) return;
     const studentName = studentMap[studentId]?.fullName || 'Học sinh';
     const updatedDays = currentRoster.days.map((d, idx) =>
       idx === dayIdx
@@ -175,7 +229,7 @@ export const WeeklyDutyRosterPanel: React.FC<WeeklyDutyRosterPanelProps> = ({
 
   // Add a student to a specific day
   const handleAddStudentToDay = (dayIdx: number) => {
-    if (!selectedStudentToAdd) return;
+    if (!canEditRoster || !selectedStudentToAdd) return;
     const day = currentRoster.days[dayIdx];
     if (day.studentIds.includes(selectedStudentToAdd)) {
       setAddingDayIdx(null);
@@ -187,7 +241,14 @@ export const WeeklyDutyRosterPanel: React.FC<WeeklyDutyRosterPanelProps> = ({
         ? { ...d, studentIds: [...d.studentIds, selectedStudentToAdd] }
         : d
     );
-    saveRosterForWeek({ ...currentRoster, days: updatedDays });
+    const nextExcluded = (currentRoster.excludedStudentIds || []).filter(
+      (id) => id !== selectedStudentToAdd
+    );
+    saveRosterForWeek({
+      ...currentRoster,
+      excludedStudentIds: nextExcluded,
+      days: updatedDays,
+    });
     setAddingDayIdx(null);
     setSelectedStudentToAdd('');
     notify(`Đã thêm ${studentName} vào lịch trực nhật ${day.dayLabel} (${day.dateStr}).`);
@@ -513,20 +574,43 @@ export const WeeklyDutyRosterPanel: React.FC<WeeklyDutyRosterPanelProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
             <span className="text-xs font-extrabold text-[#17365D] flex items-center gap-1.5">
               <Users className="w-4 h-4 text-emerald-600" />
-              Danh sách thành viên Tổ {currentRoster.teamId} tham gia trực nhật Tuần {selectedWeek} ({dutyTeamMembers.length} học sinh):
+              Danh sách thành viên Tổ {currentRoster.teamId} tham gia trực nhật Tuần {selectedWeek} (
+              {canEditRoster
+                ? dutyTeamMembers.length
+                : dutyTeamMembers.filter((m) => (memberDutyDaysMap[m.id] || []).length > 0).length}{' '}
+              học sinh):
             </span>
-            <span className="text-[11px] text-[#66809F]">
-              Mỗi học sinh trong tổ được phân công trực nhật theo ngày cụ thể bên dưới
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {canEditRoster && unassignedMembers.length > 0 && (
+                <button
+                  onClick={handleRemoveAllUnassignedMembers}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 font-bold text-[11px] transition-colors cursor-pointer"
+                  title="Xóa toàn bộ học sinh chưa được phân công ngày trực khỏi danh sách tuần này"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>Xóa {unassignedMembers.length} HS chưa phân công</span>
+                </button>
+              )}
+              <span className="text-[11px] text-[#66809F]">
+                Mỗi học sinh trong tổ được phân công trực nhật theo ngày cụ thể bên dưới
+              </span>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {dutyTeamMembers.map((member) => {
+            {(canEditRoster
+              ? dutyTeamMembers
+              : dutyTeamMembers.filter((m) => (memberDutyDaysMap[m.id] || []).length > 0)
+            ).map((member) => {
               const assignedDays = memberDutyDaysMap[member.id] || [];
               return (
                 <div
                   key={member.id}
-                  className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white border border-[#D8E7FA] shadow-2xs text-xs"
+                  className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white border shadow-2xs text-xs transition-colors ${
+                    assignedDays.length === 0
+                      ? 'border-red-200 bg-red-50/20'
+                      : 'border-[#D8E7FA]'
+                  }`}
                 >
                   <img
                     src={member.avatar}
@@ -540,15 +624,33 @@ export const WeeklyDutyRosterPanel: React.FC<WeeklyDutyRosterPanelProps> = ({
                       {member.roleInClass}
                     </span>
                   )}
-                  <span
-                    className={`px-2 py-0.5 rounded-md font-bold text-[10.5px] ${
-                      assignedDays.length > 0
-                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                        : 'bg-gray-100 text-gray-500'
-                    }`}
-                  >
-                    {assignedDays.length > 0 ? assignedDays.join(', ') : 'Dự bị'}
-                  </span>
+                  {assignedDays.length > 0 ? (
+                    <div className="inline-flex items-center gap-1">
+                      <span className="px-2 py-0.5 rounded-md font-bold text-[10.5px] bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        {assignedDays.join(', ')}
+                      </span>
+                      {canEditRoster && (
+                        <button
+                          onClick={() => handleRemoveMemberFromWeeklyRoster(member.id)}
+                          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-gray-400 hover:text-white hover:bg-red-500 transition-colors cursor-pointer"
+                          title={`Xóa ${member.fullName} khỏi danh sách trực nhật Tuần ${selectedWeek}`}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    canEditRoster && (
+                      <button
+                        onClick={() => handleRemoveMemberFromWeeklyRoster(member.id)}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 font-bold text-[10.5px] transition-colors cursor-pointer"
+                        title={`Xóa ${member.fullName} khỏi danh sách trực nhật Tuần ${selectedWeek}`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Xóa</span>
+                      </button>
+                    )
+                  )}
                 </div>
               );
             })}
@@ -660,7 +762,7 @@ export const WeeklyDutyRosterPanel: React.FC<WeeklyDutyRosterPanelProps> = ({
                             >
                               <option value="">-- Chọn học sinh thêm vào {day.dayLabel} --</option>
                               <optgroup label={`Thành viên Tổ ${currentRoster.teamId} (Tổ trực tuần này)`}>
-                                {dutyTeamMembers
+                                {allTeamMembers
                                   .filter((s) => !day.studentIds.includes(s.id))
                                   .map((s) => (
                                     <option key={s.id} value={s.id}>
@@ -702,7 +804,7 @@ export const WeeklyDutyRosterPanel: React.FC<WeeklyDutyRosterPanelProps> = ({
                           <button
                             onClick={() => {
                               setAddingDayIdx(dayIdx);
-                              const firstAvailable = dutyTeamMembers.find(
+                              const firstAvailable = allTeamMembers.find(
                                 (s) => !day.studentIds.includes(s.id)
                               );
                               setSelectedStudentToAdd(firstAvailable?.id || '');

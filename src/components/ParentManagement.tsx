@@ -13,9 +13,12 @@ import {
   Download,
   AlertCircle,
   Lock,
-  Eye
+  Eye,
+  Edit3,
+  Save,
+  X
 } from 'lucide-react';
-import { AppState, ParentContact } from '../types';
+import { AppState, ParentContact, Student } from '../types';
 import { hasPermission, isReadOnly, isTeacher } from '../utils/permissionUtils';
 
 interface ParentManagementProps {
@@ -23,17 +26,146 @@ interface ParentManagementProps {
   onUpdateState: (updater: (prev: AppState) => AppState) => void;
 }
 
+interface ParentEditDraft {
+  parentName: string;
+  parentPhone: string;
+  parentJob: string;
+  address: string;
+}
+
 export const ParentManagement: React.FC<ParentManagementProps> = ({
   appState,
   onUpdateState,
 }) => {
   const { students, parentContacts } = appState;
-  const canManageParents = hasPermission(appState, 'canManageParents');
+  const canManageParents = isTeacher(appState) || hasPermission(appState, 'canManageParents');
   const readOnly = isReadOnly(appState);
 
   const [activeTab, setActiveTab] = useState<'directory' | 'logs' | 'compose'>('directory');
   const [searchQuery, setSearchQuery] = useState('');
   const [copied, setCopied] = useState(false);
+
+  // Single-row editing state
+  const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<ParentEditDraft>({
+    parentName: '',
+    parentPhone: '',
+    parentJob: '',
+    address: '',
+  });
+
+  // Bulk editing state for quick directory updates
+  const [isBulkEditing, setIsBulkEditing] = useState(false);
+  const [bulkDrafts, setBulkDrafts] = useState<Record<string, ParentEditDraft>>({});
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+
+  const showSavedFeedback = (msg: string) => {
+    setSaveSuccessMessage(msg);
+    setTimeout(() => {
+      setSaveSuccessMessage((prev) => (prev === msg ? null : prev));
+    }, 2500);
+  };
+
+  const handleStartEditRow = (student: Student) => {
+    if (!canManageParents || readOnly) return;
+    setEditingStudentId(student.id);
+    setEditDraft({
+      parentName: student.parentName || '',
+      parentPhone: student.parentPhone || '',
+      parentJob: student.parentJob || '',
+      address: student.address || '',
+    });
+  };
+
+  const handleCancelEditRow = () => {
+    setEditingStudentId(null);
+  };
+
+  const handleSaveEditRow = (studentId: string) => {
+    if (!canManageParents || readOnly) return;
+    const trimmedName = editDraft.parentName.trim();
+    const trimmedPhone = editDraft.parentPhone.trim();
+    const trimmedJob = editDraft.parentJob.trim();
+    const trimmedAddress = editDraft.address.trim();
+
+    onUpdateState((prev) => ({
+      ...prev,
+      students: prev.students.map((st) =>
+        st.id === studentId
+          ? {
+              ...st,
+              parentName: trimmedName || st.parentName,
+              parentPhone: trimmedPhone,
+              parentJob: trimmedJob,
+              address: trimmedAddress,
+            }
+          : st
+      ),
+      parentContacts: prev.parentContacts.map((pc) =>
+        pc.studentId === studentId
+          ? {
+              ...pc,
+              parentName: trimmedName || pc.parentName,
+              phone: trimmedPhone || pc.phone,
+            }
+          : pc
+      ),
+    }));
+
+    setEditingStudentId(null);
+    showSavedFeedback('Đã lưu thông tin phụ huynh!');
+  };
+
+  const handleStartBulkEdit = () => {
+    if (!canManageParents || readOnly) return;
+    const initialDrafts: Record<string, ParentEditDraft> = {};
+    students.forEach((st) => {
+      initialDrafts[st.id] = {
+        parentName: st.parentName || '',
+        parentPhone: st.parentPhone || '',
+        parentJob: st.parentJob || '',
+        address: st.address || '',
+      };
+    });
+    setBulkDrafts(initialDrafts);
+    setEditingStudentId(null);
+    setIsBulkEditing(true);
+  };
+
+  const handleCancelBulkEdit = () => {
+    setIsBulkEditing(false);
+    setBulkDrafts({});
+  };
+
+  const handleSaveBulkEdit = () => {
+    if (!canManageParents || readOnly) return;
+    onUpdateState((prev) => ({
+      ...prev,
+      students: prev.students.map((st) => {
+        const draft = bulkDrafts[st.id];
+        if (!draft) return st;
+        return {
+          ...st,
+          parentName: draft.parentName.trim() || st.parentName,
+          parentPhone: draft.parentPhone.trim(),
+          parentJob: draft.parentJob.trim(),
+          address: draft.address.trim(),
+        };
+      }),
+      parentContacts: prev.parentContacts.map((pc) => {
+        const draft = bulkDrafts[pc.studentId];
+        if (!draft) return pc;
+        return {
+          ...pc,
+          parentName: draft.parentName.trim() || pc.parentName,
+          phone: draft.parentPhone.trim() || pc.phone,
+        };
+      }),
+    }));
+    setIsBulkEditing(false);
+    setBulkDrafts({});
+    showSavedFeedback('Đã cập nhật toàn bộ danh bạ phụ huynh!');
+  };
 
   // New announcement composer state
   const [noticeTitle, setNoticeTitle] = useState('Thông báo kế hoạch kiểm tra giữa kỳ I năm học 2026-2027');
@@ -65,7 +197,6 @@ export const ParentManagement: React.FC<ParentManagementProps> = ({
 
   const handleSaveContactLog = () => {
     if (!canManageParents) {
-      alert('Chế độ Chỉ xem: Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm để lưu nhật ký liên hệ!');
       return;
     }
     const student = students.find((s) => s.id === newLog.studentId);
@@ -97,7 +228,8 @@ export const ParentManagement: React.FC<ParentManagementProps> = ({
     (s) =>
       s.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.parentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.parentPhone.includes(searchQuery)
+      s.parentPhone.includes(searchQuery) ||
+      (s.parentJob || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -109,9 +241,11 @@ export const ParentManagement: React.FC<ParentManagementProps> = ({
             <UserCheck className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-base font-extrabold text-[#17365D]">Quản lý Phụ huynh & Liên lạc</h2>
+            <h2 className="text-base font-extrabold text-[#17365D] uppercase tracking-tight">
+              LIÊN LẠC PHỤ HUYNH
+            </h2>
             <p className="text-xs text-[#66809F]">
-              Danh bạ phụ huynh lớp 9A2, nhật ký trao đổi giáo dục và soạn thông báo nhóm lớp
+              Danh bạ phụ huynh {appState.className}, nhật ký trao đổi giáo dục và soạn thông báo nhóm lớp
             </p>
           </div>
         </div>
@@ -151,7 +285,7 @@ export const ParentManagement: React.FC<ParentManagementProps> = ({
           <div className="flex items-center gap-2.5">
             <Eye className="w-4 h-4 text-amber-600 shrink-0" />
             <span>
-              <strong>Giao diện đang ở chế độ Chỉ xem:</strong> Bạn có thể tra cứu thông tin danh bạ phụ huynh lớp 9A2. Để thêm nhật ký cuộc gọi hoặc gửi thông báo, vui lòng đăng nhập tài khoản <strong>Giáo viên chủ nhiệm</strong>.
+              <strong>Giao diện đang ở chế độ Chỉ xem:</strong> Bạn có thể tra cứu thông tin danh bạ phụ huynh {appState.className}. Để chỉnh sửa thông tin phụ huynh, thêm nhật ký cuộc gọi hoặc gửi thông báo, vui lòng đăng nhập tài khoản <strong>Giáo viên chủ nhiệm</strong>.
             </span>
           </div>
           <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full shrink-0">
@@ -163,25 +297,64 @@ export const ParentManagement: React.FC<ParentManagementProps> = ({
       {/* Tab 1: Directory */}
       {activeTab === 'directory' && (
         <div className="bg-white rounded-2xl border border-[#D8E7FA] shadow-xs overflow-hidden">
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <div className="relative w-72">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
-              <input
-                type="text"
-                placeholder="Tìm tên phụ huynh, học sinh, số ĐT..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-gray-50 border border-[#D8E7FA] focus:ring-2 focus:ring-[#1677E8]"
-              />
+          <div className="p-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="relative w-72">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Tìm tên phụ huynh, học sinh, số ĐT, nghề nghiệp..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-gray-50 border border-[#D8E7FA] focus:ring-2 focus:ring-[#1677E8]"
+                />
+              </div>
+
+              {saveSuccessMessage && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
+                  <Check className="w-3.5 h-3.5" />
+                  {saveSuccessMessage}
+                </span>
+              )}
             </div>
-            {canManageParents && (
-              <button
-                onClick={() => setIsAddLogOpen(true)}
-                className="px-3.5 py-1.5 rounded-xl bg-[#1677E8] text-white text-xs font-bold flex items-center gap-1.5"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Ghi nhật ký liên hệ
-              </button>
+
+            {canManageParents && !readOnly && (
+              <div className="flex items-center gap-2 flex-wrap">
+                {isBulkEditing ? (
+                  <>
+                    <button
+                      onClick={handleCancelBulkEdit}
+                      className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#17365D] text-xs font-bold flex items-center gap-1.5 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      Hủy chỉnh sửa
+                    </button>
+                    <button
+                      onClick={handleSaveBulkEdit}
+                      className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      Lưu tất cả thay đổi
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleStartBulkEdit}
+                    className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0B438A] border border-blue-200 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#1677E8]" />
+                    Chỉnh sửa danh bạ
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setIsAddLogOpen(true)}
+                  className="px-3.5 py-1.5 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Ghi nhật ký liên hệ
+                </button>
+              </div>
             )}
           </div>
 
@@ -194,41 +367,209 @@ export const ParentManagement: React.FC<ParentManagementProps> = ({
                   <th className="py-3 px-3.5">Số điện thoại</th>
                   <th className="py-3 px-3.5">Nghề nghiệp</th>
                   <th className="py-3 px-3.5">Địa chỉ</th>
-                  <th className="py-3 px-3.5 text-right">Gọi điện / Zalo</th>
+                  <th className="py-3 px-3.5 text-right">
+                    {canManageParents && !readOnly ? 'Thao tác / Liên hệ' : 'Gọi điện / Zalo'}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {filteredStudents.map((s) => (
-                  <tr key={s.id} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="py-3 px-3.5">
-                      <div className="flex items-center gap-2.5">
-                        <img
-                          src={s.avatar}
-                          alt={s.fullName}
-                          referrerPolicy="no-referrer"
-                          className="w-7 h-7 rounded-full object-cover border border-gray-200"
-                        />
-                        <div>
-                          <span className="font-bold text-[#17365D] block">{s.fullName}</span>
-                          <span className="text-[10px] text-gray-400 font-mono">Tổ {s.teamId}</span>
+                {filteredStudents.map((s) => {
+                  const isRowEditing = !isBulkEditing && editingStudentId === s.id;
+                  const bulkRowDraft = bulkDrafts[s.id];
+
+                  return (
+                    <tr key={s.id} className="hover:bg-blue-50/30 transition-colors">
+                      <td className="py-3 px-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src={s.avatar}
+                            alt={s.fullName}
+                            referrerPolicy="no-referrer"
+                            className="w-7 h-7 rounded-full object-cover border border-gray-200"
+                          />
+                          <div>
+                            <span className="font-bold text-[#17365D] block">{s.fullName}</span>
+                            <span className="text-[10px] text-gray-400 font-mono">Tổ {s.teamId}</span>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-3.5 font-bold text-[#17365D]">{s.parentName}</td>
-                    <td className="py-3 px-3.5 font-mono text-[#1677E8] font-bold">{s.parentPhone}</td>
-                    <td className="py-3 px-3.5 text-[#66809F]">{s.parentJob || '-'}</td>
-                    <td className="py-3 px-3.5 text-[#66809F] truncate max-w-xs">{s.address}</td>
-                    <td className="py-3 px-3.5 text-right">
-                      <a
-                        href={`tel:${s.parentPhone}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#1677E8] font-bold text-[11px] transition-colors"
-                      >
-                        <Phone className="w-3 h-3" />
-                        Liên hệ
-                      </a>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+
+                      {/* Họ tên Phụ huynh */}
+                      <td className="py-2.5 px-3.5 font-bold text-[#17365D]">
+                        {isBulkEditing && bulkRowDraft ? (
+                          <input
+                            type="text"
+                            value={bulkRowDraft.parentName}
+                            onChange={(e) =>
+                              setBulkDrafts((prev) => ({
+                                ...prev,
+                                [s.id]: { ...prev[s.id], parentName: e.target.value },
+                              }))
+                            }
+                            placeholder="Nhập tên phụ huynh..."
+                            className="w-full min-w-[170px] px-2.5 py-1.5 rounded-lg border border-blue-200 bg-white text-xs font-bold text-[#17365D] focus:ring-2 focus:ring-[#1677E8] focus:outline-hidden"
+                          />
+                        ) : isRowEditing ? (
+                          <input
+                            type="text"
+                            value={editDraft.parentName}
+                            onChange={(e) => setEditDraft({ ...editDraft, parentName: e.target.value })}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveEditRow(s.id);
+                              if (e.key === 'Escape') handleCancelEditRow();
+                            }}
+                            placeholder="Nhập tên phụ huynh..."
+                            autoFocus
+                            className="w-full min-w-[170px] px-2.5 py-1.5 rounded-lg border border-blue-300 bg-white text-xs font-bold text-[#17365D] focus:ring-2 focus:ring-[#1677E8] focus:outline-hidden"
+                          />
+                        ) : (
+                          <span>{s.parentName || '-'}</span>
+                        )}
+                      </td>
+
+                      {/* Số điện thoại */}
+                      <td className="py-2.5 px-3.5 font-mono text-[#1677E8] font-bold">
+                        {isBulkEditing && bulkRowDraft ? (
+                          <input
+                            type="text"
+                            value={bulkRowDraft.parentPhone}
+                            onChange={(e) =>
+                              setBulkDrafts((prev) => ({
+                                ...prev,
+                                [s.id]: { ...prev[s.id], parentPhone: e.target.value },
+                              }))
+                            }
+                            placeholder="Số điện thoại..."
+                            className="w-full min-w-[125px] px-2.5 py-1.5 rounded-lg border border-blue-200 bg-white text-xs font-mono font-bold text-[#1677E8] focus:ring-2 focus:ring-[#1677E8] focus:outline-hidden"
+                          />
+                        ) : isRowEditing ? (
+                          <input
+                            type="text"
+                            value={editDraft.parentPhone}
+                            onChange={(e) => setEditDraft({ ...editDraft, parentPhone: e.target.value })}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveEditRow(s.id);
+                              if (e.key === 'Escape') handleCancelEditRow();
+                            }}
+                            placeholder="Số điện thoại..."
+                            className="w-full min-w-[125px] px-2.5 py-1.5 rounded-lg border border-blue-300 bg-white text-xs font-mono font-bold text-[#1677E8] focus:ring-2 focus:ring-[#1677E8] focus:outline-hidden"
+                          />
+                        ) : (
+                          <span>{s.parentPhone || '-'}</span>
+                        )}
+                      </td>
+
+                      {/* Nghề nghiệp */}
+                      <td className="py-2.5 px-3.5 text-[#66809F]">
+                        {isBulkEditing && bulkRowDraft ? (
+                          <input
+                            type="text"
+                            value={bulkRowDraft.parentJob}
+                            onChange={(e) =>
+                              setBulkDrafts((prev) => ({
+                                ...prev,
+                                [s.id]: { ...prev[s.id], parentJob: e.target.value },
+                              }))
+                            }
+                            placeholder="Nghề nghiệp..."
+                            className="w-full min-w-[130px] px-2.5 py-1.5 rounded-lg border border-blue-200 bg-white text-xs font-medium text-[#17365D] focus:ring-2 focus:ring-[#1677E8] focus:outline-hidden"
+                          />
+                        ) : isRowEditing ? (
+                          <input
+                            type="text"
+                            value={editDraft.parentJob}
+                            onChange={(e) => setEditDraft({ ...editDraft, parentJob: e.target.value })}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveEditRow(s.id);
+                              if (e.key === 'Escape') handleCancelEditRow();
+                            }}
+                            placeholder="Nghề nghiệp..."
+                            className="w-full min-w-[130px] px-2.5 py-1.5 rounded-lg border border-blue-300 bg-white text-xs font-medium text-[#17365D] focus:ring-2 focus:ring-[#1677E8] focus:outline-hidden"
+                          />
+                        ) : (
+                          <span>{s.parentJob || '-'}</span>
+                        )}
+                      </td>
+
+                      {/* Địa chỉ */}
+                      <td className="py-2.5 px-3.5 text-[#66809F] max-w-xs">
+                        {isBulkEditing && bulkRowDraft ? (
+                          <input
+                            type="text"
+                            value={bulkRowDraft.address}
+                            onChange={(e) =>
+                              setBulkDrafts((prev) => ({
+                                ...prev,
+                                [s.id]: { ...prev[s.id], address: e.target.value },
+                              }))
+                            }
+                            placeholder="Địa chỉ..."
+                            className="w-full min-w-[150px] px-2.5 py-1.5 rounded-lg border border-blue-200 bg-white text-xs text-[#17365D] focus:ring-2 focus:ring-[#1677E8] focus:outline-hidden"
+                          />
+                        ) : isRowEditing ? (
+                          <input
+                            type="text"
+                            value={editDraft.address}
+                            onChange={(e) => setEditDraft({ ...editDraft, address: e.target.value })}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveEditRow(s.id);
+                              if (e.key === 'Escape') handleCancelEditRow();
+                            }}
+                            placeholder="Địa chỉ..."
+                            className="w-full min-w-[150px] px-2.5 py-1.5 rounded-lg border border-blue-300 bg-white text-xs text-[#17365D] focus:ring-2 focus:ring-[#1677E8] focus:outline-hidden"
+                          />
+                        ) : (
+                          <span className="truncate block">{s.address || '-'}</span>
+                        )}
+                      </td>
+
+                      {/* Thao tác / Gọi điện */}
+                      <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center justify-end gap-1.5">
+                          {canManageParents && !readOnly && !isBulkEditing && (
+                            isRowEditing ? (
+                              <>
+                                <button
+                                  onClick={() => handleSaveEditRow(s.id)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors shadow-2xs"
+                                  title="Lưu thay đổi"
+                                >
+                                  <Check className="w-3 h-3" />
+                                  Lưu
+                                </button>
+                                <button
+                                  onClick={handleCancelEditRow}
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-[11px] transition-colors"
+                                  title="Hủy"
+                                >
+                                  <X className="w-3 h-3" />
+                                  Hủy
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => handleStartEditRow(s)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold text-[11px] transition-colors"
+                                title="Chỉnh sửa tên phụ huynh, số điện thoại, nghề nghiệp"
+                              >
+                                <Edit3 className="w-3 h-3 text-amber-600" />
+                                Sửa
+                              </button>
+                            )
+                          )}
+
+                          <a
+                            href={`tel:${s.parentPhone}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#1677E8] font-bold text-[11px] transition-colors"
+                          >
+                            <Phone className="w-3 h-3" />
+                            Liên hệ
+                          </a>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

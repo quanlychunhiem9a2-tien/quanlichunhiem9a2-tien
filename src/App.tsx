@@ -17,6 +17,7 @@ import { ReportsStatistics } from './components/ReportsStatistics';
 import { SystemSettings } from './components/SystemSettings';
 import { QuickActionModals } from './components/QuickActionModals';
 import { NotificationsModal } from './components/NotificationsModal';
+import { AnnouncementsManager } from './components/AnnouncementsManager';
 
 import { isReadOnly, hasPermission, isTeacher } from './utils/permissionUtils';
 
@@ -150,6 +151,13 @@ export default function App() {
             />
           )}
 
+          {currentPage === 'announcements' && (
+            <AnnouncementsManager
+              appState={appState}
+              onUpdateState={handleUpdateState}
+            />
+          )}
+
           {currentPage === 'students' && (
             <StudentManagement
               appState={appState}
@@ -238,6 +246,11 @@ export default function App() {
         isOpen={notificationsOpen}
         onClose={() => setNotificationsOpen(false)}
         notices={appState.notices}
+        onOpenAnnouncementsPage={() => {
+          setNotificationsOpen(false);
+          setCurrentPage('announcements');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
     </div>
   );

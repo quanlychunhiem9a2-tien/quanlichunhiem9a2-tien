@@ -78,29 +78,38 @@ export function buildWeeklyDutyRoster(
   const now = new Date();
   const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
-  const days: DutyDayAssignment[] = DAY_LABELS.map((dayLabel, dayIdx) => {
-    const dayDate = new Date(mondayDate.getTime() + dayIdx * 24 * 3600 * 1000);
-    const dateStr = formatDateVN(dayDate);
-
-    // Distribute team members evenly across the 6 days (2 students per day, rotating cleanly)
-    const assignedIds: string[] = [];
-    if (teamMembers.length > 0) {
-      const countPerDay = teamMembers.length >= 6 ? 2 : 1;
-      for (let k = 0; k < countPerDay; k++) {
-        const memberIdx = (dayIdx * countPerDay + k) % teamMembers.length;
-        const candidate = teamMembers[memberIdx];
-        if (candidate && !assignedIds.includes(candidate.id)) {
-          assignedIds.push(candidate.id);
-        }
+  // Distribute all team members evenly across the 6 days so no member is left unassigned
+  const dayBuckets: string[][] = Array.from({ length: DAY_LABELS.length }, () => []);
+  if (teamMembers.length > 0) {
+    // Step 1: Assign every member in teamMembers to one of the 6 days sequentially
+    teamMembers.forEach((member, idx) => {
+      const targetDayIdx = Math.min(
+        DAY_LABELS.length - 1,
+        Math.floor((idx * DAY_LABELS.length) / teamMembers.length)
+      );
+      if (!dayBuckets[targetDayIdx].includes(member.id)) {
+        dayBuckets[targetDayIdx].push(member.id);
       }
-      // On Saturday (Tổng vệ sinh cuối tuần), add one more student or team leader if available
-      if (dayIdx === 5 && teamMembers.length >= 3) {
-        const extraCandidate = teamMembers[teamMembers.length - 1];
-        if (extraCandidate && !assignedIds.includes(extraCandidate.id)) {
-          assignedIds.push(extraCandidate.id);
+    });
+
+    // Step 2: Ensure each day has at least 2 students when team has >= 2 members
+    const minPerDay = teamMembers.length >= 2 ? 2 : 1;
+    let rotateIdx = 0;
+    for (let dIdx = 0; dIdx < DAY_LABELS.length; dIdx++) {
+      while (dayBuckets[dIdx].length < minPerDay && dayBuckets[dIdx].length < teamMembers.length) {
+        const candidate = teamMembers[rotateIdx % teamMembers.length];
+        rotateIdx++;
+        if (candidate && !dayBuckets[dIdx].includes(candidate.id)) {
+          dayBuckets[dIdx].push(candidate.id);
         }
       }
     }
+  }
+
+  const days: DutyDayAssignment[] = DAY_LABELS.map((dayLabel, dayIdx) => {
+    const dayDate = new Date(mondayDate.getTime() + dayIdx * 24 * 3600 * 1000);
+    const dateStr = formatDateVN(dayDate);
+    const assignedIds = dayBuckets[dayIdx] || [];
 
     // Default status based on whether the date has passed
     let status: 'done' | 'pending' | 'reminded' = 'pending';
@@ -133,6 +142,7 @@ export function buildWeeklyDutyRoster(
     teamId,
     supervisorName: `${leader} (Tổ trưởng Tổ ${teamId})`,
     days,
+    excludedStudentIds: [],
   };
 }
 
@@ -153,14 +163,21 @@ export function getOrGenerateWeeklyDutyRoster(
       week1Monday.getTime() + (weekNumber - 1) * 7 * 24 * 3600 * 1000
     );
     const validStudentIdSet = new Set(students.map((s) => s.id));
+    const excludedIds = (existing.excludedStudentIds || []).filter((id) =>
+      validStudentIdSet.has(id)
+    );
+    const excludedSet = new Set(excludedIds);
     return {
       ...existing,
+      excludedStudentIds: excludedIds,
       days: existing.days.map((d, idx) => {
         const dayDate = new Date(mondayDate.getTime() + idx * 24 * 3600 * 1000);
         return {
           ...d,
           dateStr: formatDateVN(dayDate),
-          studentIds: d.studentIds.filter((id) => validStudentIdSet.has(id)),
+          studentIds: d.studentIds.filter(
+            (id) => validStudentIdSet.has(id) && !excludedSet.has(id)
+          ),
         };
       }),
     };

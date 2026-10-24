@@ -563,8 +563,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 <h3 className="text-sm font-bold text-[#17365D]">Công việc cần làm</h3>
               </div>
               <button
-                onClick={() => onNavigate('plans')}
-                className="text-xs font-semibold text-[#1677E8] hover:text-[#073B82] flex items-center gap-0.5"
+                onClick={() => onNavigate('announcements')}
+                className="text-xs font-semibold text-[#1677E8] hover:text-[#073B82] flex items-center gap-0.5 cursor-pointer"
               >
                 Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
               </button>
@@ -575,10 +575,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 <div
                   key={t.id}
                   onClick={() => {
-                    if (!canToggle) {
-                      alert('Chế độ Chỉ xem: Hãy đăng nhập tài khoản có thẩm quyền để cập nhật trạng thái công việc!');
-                      return;
-                    }
+                    if (!canToggle) return;
                     onToggleTask(t.id);
                   }}
                   className="py-2.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-blue-50/40 px-2 rounded-lg transition-colors group"
@@ -632,21 +629,21 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <div className="flex items-center justify-between pb-3.5 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <Volume2 className="w-4 h-4 text-[#1677E8]" />
-                <h3 className="text-sm font-bold text-[#17365D]">Thông báo mới</h3>
+                <h3 className="text-sm font-bold text-[#17365D]">Thông báo & Sự kiện</h3>
               </div>
               <button
-                onClick={() => onNavigate('parents')}
-                className="text-xs font-semibold text-[#1677E8] hover:text-[#073B82] flex items-center gap-0.5"
+                onClick={() => onNavigate('announcements')}
+                className="text-xs font-semibold text-[#1677E8] hover:text-[#073B82] flex items-center gap-0.5 cursor-pointer"
               >
-                Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
+                {readOnly ? 'Xem tất cả' : 'Quản lý / Đăng tin'} <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
             <div className="divide-y divide-gray-100 mt-2">
-              {notices.map((n) => (
+              {notices.slice(0, 5).map((n) => (
                 <div
                   key={n.id}
-                  onClick={() => onNavigate('parents')}
+                  onClick={() => onNavigate('announcements')}
                   className="py-3 flex items-start gap-3 cursor-pointer hover:bg-blue-50/50 p-2 rounded-xl transition-colors group"
                 >
                   <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-[#1677E8] shrink-0 mt-0.5">
@@ -656,9 +653,16 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                     {n.iconType === 'document' && <FileText className="w-4 h-4" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-bold text-[#17365D] group-hover:text-[#1677E8] truncate">
-                      {n.title}
-                    </h4>
+                    <div className="flex items-center gap-1.5">
+                      {n.category && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-blue-50 text-[#1677E8] shrink-0">
+                          {n.category}
+                        </span>
+                      )}
+                      <h4 className="text-xs font-bold text-[#17365D] group-hover:text-[#1677E8] truncate">
+                        {n.title}
+                      </h4>
+                    </div>
                     <p className="text-[11px] text-[#66809F] mt-0.5 leading-snug">
                       {n.timeInfo}
                     </p>

@@ -679,11 +679,11 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
     },
     {
       id: 'parents',
-      name: '6. Sổ liên lạc & Phụ huynh',
+      name: '6. Liên lạc Phụ huynh',
       icon: PhoneCall,
       color: 'bg-rose-500',
       lightBg: 'bg-rose-50 text-rose-700 border-rose-200',
-      description: 'Nhật ký trao đổi với phụ huynh học sinh qua Điện thoại, Zalo, Gặp trực tiếp hoặc Họp phụ huynh. Theo dõi các trường hợp cần gọi lại và hẹn gặp gia đình.',
+      description: 'Danh bạ phụ huynh (cập nhật họ tên, số điện thoại, nghề nghiệp) và nhật ký trao đổi với phụ huynh học sinh qua Điện thoại, Zalo, Gặp trực tiếp hoặc Họp phụ huynh.',
       levels: [
         { label: 'Quản trị trao đổi', note: 'GVCN trực tiếp ghi nhận và tra cứu lịch sử liên lạc với từng phụ huynh.' },
         { label: 'Khóa bảo mật', note: 'Học sinh và cán sự không được truy cập mục này nhằm bảo mật thông tin liên lạc riêng tư.' },

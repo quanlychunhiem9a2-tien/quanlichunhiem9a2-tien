@@ -1836,35 +1836,78 @@ export const initialTasks = [
 export const initialNotices = [
   {
     id: 'not-1',
-    title: 'Họp phụ huynh đầu năm',
+    title: 'Họp phụ huynh đầu năm học 2026 - 2027',
     timeInfo: 'Thời gian: 10h30 ngày 11/09/2026 (Thứ 6)',
     relativeTime: '2 giờ trước',
     iconType: 'megaphone' as const,
-    description: 'Họp phổ biến phương hướng năm học 2026-2027 và bầu ban đại diện cha mẹ học sinh lớp 9A2 tại phòng học số 302.'
+    category: 'Họp phụ huynh' as const,
+    date: '11/09/2026',
+    location: 'Phòng học 302, Tầng 3',
+    targetAudience: 'Phụ huynh & GVCN',
+    priority: 'Khẩn' as const,
+    isPinned: true,
+    author: 'GVCN Trần Văn Tiến',
+    description: 'Họp phổ biến phương hướng năm học 2026-2027, thống nhất kế hoạch ôn thi vào lớp 10 và bầu Ban đại diện Cha mẹ học sinh lớp 9A2 tại phòng học số 302.'
   },
   {
     id: 'not-2',
-    title: 'Thông báo lịch kiểm tra giữa kỳ',
+    title: 'Thông báo lịch kiểm tra khảo sát & giữa kỳ I',
     timeInfo: 'Từ ngày 15/09 đến 18/09/2026',
     relativeTime: '5 giờ trước',
     iconType: 'calendar' as const,
-    description: 'Lịch thi khảo sát và kiểm tra giữa kỳ I các môn Toán, Văn, Ngoại ngữ và KHTN theo đề chung của nhà trường.'
+    category: 'Học tập - Thi cử' as const,
+    date: '15/09/2026',
+    location: 'Phòng học 302',
+    targetAudience: 'Toàn lớp 9A2',
+    priority: 'Quan trọng' as const,
+    isPinned: true,
+    author: 'GVCN Trần Văn Tiến',
+    description: 'Lịch thi khảo sát và kiểm tra giữa kỳ I các môn Toán, Ngữ văn, Tiếng Anh và KHTN theo đề chung của nhà trường. Các em ôn tập kỹ đề cương đã phát.'
   },
   {
     id: 'not-3',
-    title: 'Kế hoạch hoạt động trải nghiệm',
-    timeInfo: 'Tham quan di tích lịch sử Đền Hùng',
+    title: 'Sự kiện: Hoạt động trải nghiệm tham quan Đền Hùng',
+    timeInfo: 'Dự kiến: 06h30 ngày 04/10/2026 (Chủ Nhật)',
     relativeTime: '1 ngày trước',
     iconType: 'users' as const,
-    description: 'Hoạt động giáo dục truyền thống lịch sử, địa chỉ đỏ và kỹ năng sống dành cho khối 9 dự kiến tổ chức vào đầu tháng 10.'
+    category: 'Sự kiện' as const,
+    date: '04/10/2026',
+    location: 'Khu di tích lịch sử Đền Hùng - Phú Thọ',
+    targetAudience: 'Toàn lớp & Phụ huynh đăng ký',
+    priority: 'Quan trọng' as const,
+    isPinned: false,
+    author: 'GVCN Trần Văn Tiến',
+    description: 'Hoạt động giáo dục truyền thống lịch sử, địa chỉ đỏ và kỹ năng sống dành cho khối 9. Học sinh nộp phiếu đăng ký có chữ ký phụ huynh cho Lớp trưởng trước ngày 25/09.'
   },
   {
     id: 'not-4',
-    title: 'Nhắc nhở nộp bài tập',
-    timeInfo: 'Hạn nộp: 12/09/2026',
+    title: 'Công việc tuần: Hoàn thành hồ sơ cá nhân & Đăng ký CLB',
+    timeInfo: 'Hạn hoàn thành: 17h00 ngày 12/09/2026',
     relativeTime: '1 ngày trước',
     iconType: 'document' as const,
-    description: 'Nhắc học sinh hoàn thành hồ sơ cá nhân, phiếu đăng ký câu lạc bộ kỹ năng và bài thu hoạch tuần đầu.'
+    category: 'Công việc lớp' as const,
+    date: '12/09/2026',
+    location: 'Nộp tại bàn Giáo viên / Tổ trưởng thu',
+    targetAudience: 'Toàn lớp (4 Tổ trưởng tổng hợp)',
+    priority: 'Thường' as const,
+    isPinned: false,
+    author: 'GVCN Trần Văn Tiến',
+    description: 'Nhắc các em học sinh hoàn thành sơ yếu lý lịch đầu năm, phiếu đăng ký câu lạc bộ kỹ năng và bài thu hoạch tuần sinh hoạt tập thể. Các Tổ trưởng thu đủ nộp cho Lớp trưởng.'
+  },
+  {
+    id: 'not-5',
+    title: 'Phân công chuẩn bị tiết mục Văn nghệ chào mừng 20/11',
+    timeInfo: 'Tập luyện: 16h30 Thứ Ba & Thứ Năm hàng tuần',
+    relativeTime: '2 ngày trước',
+    iconType: 'users' as const,
+    category: 'Sự kiện' as const,
+    date: '15/10/2026',
+    location: 'Nhà đa năng Trường TH & THCS Võ Thị Sáu',
+    targetAudience: 'Đội văn nghệ & Ban cán sự lớp',
+    priority: 'Thường' as const,
+    isPinned: false,
+    author: 'GVCN Trần Văn Tiến',
+    description: 'Chi đội 9A2 đăng ký 01 tiết mục tốp ca múa hát truyền thống. Giao Lớp phó văn thể mỹ và Bí thư Chi đoàn lên danh sách 12 bạn tham gia tập luyện.'
   }
 ];
 

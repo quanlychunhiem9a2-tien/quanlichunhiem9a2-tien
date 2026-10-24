@@ -14,7 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Send,
-  BookOpen
+  BookOpen,
+  Megaphone
 } from 'lucide-react';
 import { NavPage } from '../types';
 
@@ -33,11 +34,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const menuItems: { id: NavPage; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: 'home', label: 'Trang chủ', icon: Home },
+    { id: 'announcements', label: 'Thông báo', icon: Megaphone },
     { id: 'students', label: 'Quản lý học sinh', icon: Users },
     { id: 'attendance', label: 'Điểm danh - Chuyên cần', icon: CalendarCheck },
     { id: 'academics', label: 'Học tập - Rèn luyện', icon: GraduationCap },
     { id: 'emulation', label: 'Thi đua - Nề nếp', icon: Trophy },
-    { id: 'parents', label: 'Quản lý phụ huynh', icon: UserCheck },
+    { id: 'parents', label: 'Liên lạc phụ huynh', icon: UserCheck },
     { id: 'plans', label: 'Kế hoạch chủ nhiệm', icon: FileSpreadsheet },
     { id: 'documents', label: 'Hồ sơ - Văn bản', icon: FileText },
     { id: 'ai', label: 'Trợ lý AI GVCN', icon: Sparkles },

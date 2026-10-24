@@ -119,6 +119,14 @@ export interface Notice {
   relativeTime: string;
   iconType: 'megaphone' | 'calendar' | 'users' | 'document';
   description?: string;
+  category?: 'Thông báo chung' | 'Công việc lớp' | 'Sự kiện' | 'Học tập - Thi cử' | 'Họp phụ huynh';
+  date?: string;
+  location?: string;
+  targetAudience?: string;
+  priority?: 'Khẩn' | 'Quan trọng' | 'Thường';
+  isPinned?: boolean;
+  author?: string;
+  createdAt?: string;
 }
 
 export interface SpecialStudentConcern {
@@ -234,6 +242,7 @@ export interface WeeklyDutyRoster {
   teamId: number;     // 1..4
   supervisorName: string;
   days: DutyDayAssignment[];
+  excludedStudentIds?: string[];
 }
 
 export interface WeeklyExemplaryStudentItem {
@@ -277,6 +286,7 @@ export interface AppState {
 
 export type NavPage =
   | 'home'
+  | 'announcements'
   | 'students'
   | 'attendance'
   | 'academics'

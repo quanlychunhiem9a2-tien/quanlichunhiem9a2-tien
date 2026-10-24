@@ -246,6 +246,7 @@ export const AcademicConduct: React.FC<AcademicConductProps> = ({
       [studentId]: {
         ...cur,
         conductRank: val,
+        conductEvaluated: Boolean(val),
         academicRank: evalRes.academicRank,
         awardTitle: evalRes.awardTitle,
       },
@@ -318,7 +319,8 @@ export const AcademicConduct: React.FC<AcademicConductProps> = ({
             evaluatedSubjects: {},
             gpa: 0,
             academicRank: '',
-            conductRank: 'Tốt',
+            conductRank: '',
+            conductEvaluated: false,
             awardTitle: '',
             notes: '',
           };
@@ -338,7 +340,8 @@ export const AcademicConduct: React.FC<AcademicConductProps> = ({
           }
 
           updated.academicRank = '';
-          updated.conductRank = 'Tốt';
+          updated.conductRank = '';
+          updated.conductEvaluated = false;
           updated.awardTitle = '';
           updated.gpa = 0;
           updated.subjects = {};
@@ -384,6 +387,7 @@ export const AcademicConduct: React.FC<AcademicConductProps> = ({
         // Update overall student properties based on active term
         updatedStudent.academicRank = draft.academicRank;
         updatedStudent.conductRank = draft.conductRank;
+        updatedStudent.conductEvaluated = Boolean(draft.conductRank);
         updatedStudent.awardTitle = draft.awardTitle;
         updatedStudent.gpa = draft.gpa;
         updatedStudent.subjects = draft.subjects;
@@ -466,28 +470,33 @@ export const AcademicConduct: React.FC<AcademicConductProps> = ({
         if (s.id !== editingStudent.id) return s;
 
         let updated = { ...s };
+        const finalModalRecord: SemesterRecord = {
+          ...modalRecord,
+          conductEvaluated: Boolean(modalRecord.conductRank),
+        };
         if (modalTerm === 'hk1') {
-          updated.semester1 = modalRecord;
+          updated.semester1 = finalModalRecord;
           if (updated.semester2) {
-            updated.yearOverall = computeYearFromSemesters(modalRecord, updated.semester2);
+            updated.yearOverall = computeYearFromSemesters(finalModalRecord, updated.semester2);
           }
         } else if (modalTerm === 'hk2') {
-          updated.semester2 = modalRecord;
+          updated.semester2 = finalModalRecord;
           if (updated.semester1) {
-            updated.yearOverall = computeYearFromSemesters(updated.semester1, modalRecord);
+            updated.yearOverall = computeYearFromSemesters(updated.semester1, finalModalRecord);
           }
         } else {
-          updated.yearOverall = modalRecord;
+          updated.yearOverall = finalModalRecord;
         }
 
         // If modal was editing the currently active term, sync base student props
         if (modalTerm === activeTerm) {
-          updated.academicRank = modalRecord.academicRank;
-          updated.conductRank = modalRecord.conductRank;
-          updated.awardTitle = modalRecord.awardTitle;
-          updated.gpa = modalRecord.gpa;
-          updated.subjects = modalRecord.subjects;
-          updated.evaluatedSubjects = modalRecord.evaluatedSubjects;
+          updated.academicRank = finalModalRecord.academicRank;
+          updated.conductRank = finalModalRecord.conductRank;
+          updated.conductEvaluated = Boolean(finalModalRecord.conductRank);
+          updated.awardTitle = finalModalRecord.awardTitle;
+          updated.gpa = finalModalRecord.gpa;
+          updated.subjects = finalModalRecord.subjects;
+          updated.evaluatedSubjects = finalModalRecord.evaluatedSubjects;
         }
 
         return normalizeStudentTT22(updated);
@@ -1294,17 +1303,20 @@ Nhận xét gồm 3 phần:
                     <td className="py-2.5 px-2 text-center">
                       {isInlineMode ? (
                         <select
-                          value={rec.conductRank || 'Tốt'}
+                          value={rec.conductRank || ''}
                           onChange={(e) => handleInlineConductChange(s.id, e.target.value as any)}
                           className="text-[10px] py-0.5 px-1 border border-gray-200 rounded font-bold text-emerald-800 bg-white"
                         >
+                          <option value="">-</option>
                           <option value="Tốt">Tốt</option>
                           <option value="Khá">Khá</option>
                           <option value="Đạt">Đạt</option>
                           <option value="Chưa đạt">Chưa đạt</option>
                         </select>
+                      ) : !rec.conductRank ? (
+                        <span className="text-gray-300 font-mono">-</span>
                       ) : (
-                        <span className="font-bold text-emerald-700 text-[11px]">{rec.conductRank || 'Tốt'}</span>
+                        <span className="font-bold text-emerald-700 text-[11px]">{rec.conductRank}</span>
                       )}
                     </td>
 
@@ -1601,7 +1613,7 @@ Nhận xét gồm 3 phần:
                       Kết quả Rèn luyện ({modalTerm === 'hk1' ? 'HK1' : modalTerm === 'hk2' ? 'HK2' : 'Cả năm'}):
                     </label>
                     <select
-                      value={modalRecord.conductRank}
+                      value={modalRecord.conductRank || ''}
                       disabled={!canEditAcademics}
                       onChange={(e) => {
                         const newConduct = e.target.value as ConductRankTT22;
@@ -1614,6 +1626,7 @@ Nhận xét gồm 3 phần:
                         setModalRecord({
                           ...modalRecord,
                           conductRank: newConduct,
+                          conductEvaluated: Boolean(newConduct),
                           academicRank: autoEval.academicRank,
                           awardTitle: autoEval.awardTitle,
                         });
@@ -1622,6 +1635,7 @@ Nhận xét gồm 3 phần:
                         !canEditAcademics ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : 'bg-white text-emerald-800 border-gray-200'
                       }`}
                     >
+                      <option value="">- (Chưa xếp loại)</option>
                       <option value="Tốt">Tốt</option>
                       <option value="Khá">Khá</option>
                       <option value="Đạt">Đạt</option>

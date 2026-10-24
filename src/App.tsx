@@ -129,6 +129,7 @@ export default function App() {
           {currentPage === 'home' && (
             <DashboardOverview
               appState={appState}
+              onUpdateState={handleUpdateState}
               onNavigate={(page) => {
                 setCurrentPage(page);
                 window.scrollTo({ top: 0, behavior: 'smooth' });

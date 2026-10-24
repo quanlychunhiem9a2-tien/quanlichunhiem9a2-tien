@@ -22,9 +22,11 @@ import {
 import { AppState, NavPage, Task } from '../types';
 import { isReadOnly, isTeacher, hasPermission } from '../utils/permissionUtils';
 import { getCurrentSchoolWeekInfo } from '../utils/dateWeekUtils';
+import { WeeklyExemplaryStudentsCard } from './WeeklyExemplaryStudentsCard';
 
 interface DashboardOverviewProps {
   appState: AppState;
+  onUpdateState: (updater: (prev: AppState) => AppState) => void;
   onNavigate: (page: NavPage) => void;
   onToggleTask: (taskId: string) => void;
   onOpenQuickAction: (actionType: 'invite' | 'plan' | 'report' | 'comment' | 'export') => void;
@@ -33,6 +35,7 @@ interface DashboardOverviewProps {
 
 export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   appState,
+  onUpdateState,
   onNavigate,
   onToggleTask,
   onOpenQuickAction,
@@ -543,85 +546,14 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left Column (Span 2) */}
         <div className="lg:col-span-2 space-y-5">
-          {/* Card: Exemplary Students Table */}
-          <div className="bg-white rounded-2xl p-5 border border-[#D8E7FA] shadow-xs">
-            <div className="flex items-center justify-between pb-3.5 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <span className="text-blue-500 font-bold">★</span>
-                <h3 className="text-sm font-bold text-[#17365D]">Danh sách học sinh tiêu biểu</h3>
-              </div>
-              <button
-                onClick={() => onNavigate('students')}
-                className="text-xs font-semibold text-[#1677E8] hover:text-[#073B82] flex items-center gap-0.5"
-              >
-                Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs mt-2">
-                <thead>
-                  <tr className="border-b border-gray-100 text-[#66809F] font-semibold">
-                    <th className="py-2.5 px-3">STT</th>
-                    <th className="py-2.5 px-3">Họ và tên</th>
-                    <th className="py-2.5 px-3">Ngày sinh</th>
-                    <th className="py-2.5 px-3">Học lực</th>
-                    <th className="py-2.5 px-3">Hạnh kiểm</th>
-                    <th className="py-2.5 px-3">Ghi chú</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {topStudents.map((s, idx) => (
-                    <tr
-                      key={s.id}
-                      onClick={() => onSelectStudent(s.id)}
-                      className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
-                    >
-                      <td className="py-2.5 px-3 font-semibold text-[#66809F]">{idx + 1}</td>
-                      <td className="py-2.5 px-3">
-                        <div className="flex items-center gap-2.5">
-                          <img
-                            src={s.avatar}
-                            alt={s.fullName}
-                            referrerPolicy="no-referrer"
-                            className="w-7 h-7 rounded-full object-cover border border-blue-200"
-                          />
-                          <span className="font-bold text-[#17365D] group-hover:text-[#1677E8]">
-                            {s.fullName}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-2.5 px-3 text-[#66809F] font-mono">{s.dateOfBirth}</td>
-                      <td className="py-2.5 px-3">
-                        <span
-                          className={`font-semibold ${
-                            s.academicRank === 'Giỏi' ? 'text-[#10B981]' : 'text-[#1677E8]'
-                          }`}
-                        >
-                          {s.academicRank}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 font-semibold text-[#10B981]">
-                        {s.conductRank}
-                      </td>
-                      <td className="py-2.5 px-3 text-[#66809F] truncate max-w-[160px]">
-                        {s.notes}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="pt-3 text-right">
-              <button
-                onClick={() => onNavigate('students')}
-                className="text-xs font-semibold text-[#1677E8] hover:underline"
-              >
-                Xem toàn bộ danh sách →
-              </button>
-            </div>
-          </div>
+          {/* Card: Weekly Exemplary Students (Học sinh tiêu biểu của tuần) */}
+          <WeeklyExemplaryStudentsCard
+            appState={appState}
+            activeCurrentWeek={activeCurrentWeek}
+            onUpdateState={onUpdateState}
+            onNavigate={onNavigate}
+            onSelectStudent={onSelectStudent}
+          />
 
           {/* Card: Tasks To-Do */}
           <div className="bg-white rounded-2xl p-5 border border-[#D8E7FA] shadow-xs">

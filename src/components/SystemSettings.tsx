@@ -31,12 +31,14 @@ import {
   SlidersHorizontal,
   Lock,
   Eye,
-  Database
+  Database,
+  Camera
 } from 'lucide-react';
 import { AppState, UserRole, RolePermissions, UserAccount, Student } from '../types';
 import { initialUserAccounts, defaultRolePermissions } from '../mockData';
 import { hasPermission, isReadOnly, isTeacher } from '../utils/permissionUtils';
 import { SupabaseConnectPanel } from './SupabaseConnectPanel';
+import { processAvatarImageFile, PRESET_TEACHER_AVATARS } from '../utils/avatarUpload';
 
 interface SystemSettingsProps {
   appState: AppState;
@@ -104,17 +106,84 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
   const isGVCN = isTeacher(appState);
   const readOnly = isReadOnly(appState);
 
+  const teacherAccount =
+    userAccounts.find((acc) => acc.role === 'teacher') || userAccounts[0];
+
+  const handleAccountAvatarUpload = async (accountId: string, file?: File | null) => {
+    if (!file) return;
+    try {
+      const dataUrl = await processAvatarImageFile(file);
+      onUpdateState((prev) => {
+        const currentAccounts = prev.userAccounts || initialUserAccounts;
+        const targetAcc = currentAccounts.find((a) => a.id === accountId);
+        const updatedAccounts = currentAccounts.map((acc) =>
+          acc.id === accountId ? { ...acc, avatar: dataUrl } : acc
+        );
+        const updatedStudents = targetAcc?.studentId
+          ? prev.students.map((st) =>
+              st.id === targetAcc.studentId ? { ...st, avatar: dataUrl } : st
+            )
+          : prev.students;
+        const updatedCurrentUser =
+          prev.currentUser?.id === accountId
+            ? { ...prev.currentUser, avatar: dataUrl }
+            : prev.currentUser;
+        return {
+          ...prev,
+          userAccounts: updatedAccounts,
+          students: updatedStudents,
+          currentUser: updatedCurrentUser,
+        };
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      console.error('Avatar upload error:', err);
+    }
+  };
+
+  const handleSetTeacherPresetAvatar = (presetUrl: string) => {
+    if (!teacherAccount) return;
+    onUpdateState((prev) => {
+      const currentAccounts = prev.userAccounts || initialUserAccounts;
+      const updatedAccounts = currentAccounts.map((acc) =>
+        acc.id === teacherAccount.id ? { ...acc, avatar: presetUrl } : acc
+      );
+      const updatedCurrentUser =
+        prev.currentUser?.id === teacherAccount.id
+          ? { ...prev.currentUser, avatar: presetUrl }
+          : prev.currentUser;
+      return {
+        ...prev,
+        userAccounts: updatedAccounts,
+        currentUser: updatedCurrentUser,
+      };
+    });
+  };
+
   const handleSave = () => {
     if (!isGVCN) {
       alert('Chỉ tài khoản Giáo viên chủ nhiệm mới có quyền lưu và cập nhật cấu hình hệ thống!');
       return;
     }
-    onUpdateState((prev) => ({
-      ...prev,
-      ...formData,
-      rolePermissions: permissionsState,
-      userAccounts: userAccounts,
-    }));
+    onUpdateState((prev) => {
+      const updatedAccounts = (prev.userAccounts || initialUserAccounts).map((acc) =>
+        acc.role === 'teacher'
+          ? { ...acc, name: formData.teacherName || acc.name }
+          : acc
+      );
+      const updatedCurrentUser =
+        prev.currentUser?.role === 'teacher'
+          ? { ...prev.currentUser, name: formData.teacherName || prev.currentUser.name }
+          : prev.currentUser;
+      return {
+        ...prev,
+        ...formData,
+        rolePermissions: permissionsState,
+        userAccounts: updatedAccounts,
+        currentUser: updatedCurrentUser,
+      };
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -758,11 +827,30 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                         {/* Member & Role */}
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2.5">
-                            <img
-                              src={account.avatar}
-                              alt=""
-                              className="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0"
-                            />
+                            <label
+                              title="Nhấn để tải ảnh đại diện mới"
+                              className="relative group/accavatar cursor-pointer shrink-0"
+                            >
+                              <img
+                                src={account.avatar}
+                                alt=""
+                                referrerPolicy="no-referrer"
+                                className="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0"
+                              />
+                              <span className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/accavatar:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                <Camera className="w-3.5 h-3.5" />
+                              </span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleAccountAvatarUpload(account.id, file);
+                                  e.target.value = '';
+                                }}
+                              />
+                            </label>
                             <div>
                               <div className="flex items-center gap-1.5">
                                 <span className="font-extrabold text-[#17365D] block">
@@ -1118,6 +1206,82 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
               Hồ sơ Giáo viên chủ nhiệm
             </h3>
 
+            {/* Teacher Avatar Upload Card */}
+            <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3.5">
+                <label
+                  title="Nhấn để tải ảnh đại diện Giáo viên chủ nhiệm"
+                  className="relative group/tavatar cursor-pointer shrink-0"
+                >
+                  <img
+                    src={teacherAccount?.avatar || PRESET_TEACHER_AVATARS[0]}
+                    alt={formData.teacherName}
+                    referrerPolicy="no-referrer"
+                    className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-md bg-white"
+                  />
+                  <span className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/tavatar:opacity-100 flex items-center justify-center text-white transition-opacity">
+                    <Camera className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file && teacherAccount) {
+                        handleAccountAvatarUpload(teacherAccount.id, file);
+                      }
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                <div className="space-y-1">
+                  <span className="font-extrabold text-[#17365D] block text-xs">
+                    Ảnh đại diện Giáo viên (Avatar GVCN)
+                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="px-3 py-1.5 rounded-xl bg-[#1677E8] hover:bg-blue-700 text-white font-bold text-[11px] inline-flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Tải ảnh từ máy tính</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file && teacherAccount) {
+                            handleAccountAvatarUpload(teacherAccount.id, file);
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                    <span className="text-[10.5px] text-[#66809F]">
+                      Tự động lưu & đồng bộ lên web
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                {PRESET_TEACHER_AVATARS.map((presetUrl, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSetTeacherPresetAvatar(presetUrl)}
+                    title="Chọn mẫu avatar GVCN"
+                    className={`w-7 h-7 rounded-full overflow-hidden border-2 transition-transform hover:scale-110 ${
+                      teacherAccount?.avatar === presetUrl
+                        ? 'border-[#1677E8] ring-2 ring-blue-200'
+                        : 'border-white'
+                    }`}
+                  >
+                    <img src={presetUrl} alt="" className="w-full h-full object-cover bg-white" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-3">
               <div>
                 <label className="font-semibold text-[#17365D] block mb-1">Họ và tên Giáo viên:</label>
@@ -1378,6 +1542,42 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                   <span className="text-[10.5px] text-[#66809F] block mt-0.5">
                     Học sinh cần nhập mật khẩu này khi đăng nhập vào hệ thống để chỉnh sửa
                   </span>
+                </div>
+
+                <div className="sm:col-span-2 flex items-center justify-between p-3 rounded-xl bg-blue-50/40 border border-blue-100">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={newAccountAvatar}
+                      alt=""
+                      referrerPolicy="no-referrer"
+                      className="w-11 h-11 rounded-full object-cover border border-white shadow-xs bg-white"
+                    />
+                    <div>
+                      <span className="font-bold text-[#17365D] block">Ảnh đại diện thành viên</span>
+                      <span className="text-[10.5px] text-[#66809F]">Tải ảnh đại diện riêng từ máy tính</span>
+                    </div>
+                  </div>
+                  <label className="px-3 py-1.5 rounded-xl bg-[#1677E8] hover:bg-blue-700 text-white font-bold text-[11px] inline-flex items-center gap-1.5 cursor-pointer">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Chọn file ảnh</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          try {
+                            const url = await processAvatarImageFile(file);
+                            setNewAccountAvatar(url);
+                          } catch (err) {
+                            console.error(err);
+                          }
+                        }
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
                 </div>
               </div>
 

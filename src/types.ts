@@ -28,6 +28,7 @@ export interface SemesterRecord {
   gpa: number;
   academicRank: AcademicRankTT22;
   conductRank: ConductRankTT22;
+  conductEvaluated?: boolean;
   awardTitle?: AwardTitleTT22;
   notes?: string;
 }
@@ -47,6 +48,7 @@ export interface Student {
   parentJob?: string;
   academicRank: AcademicRankTT22;
   conductRank: ConductRankTT22;
+  conductEvaluated?: boolean;
   awardTitle?: AwardTitleTT22;
   gpa: number;
   notes: string;
@@ -234,6 +236,21 @@ export interface WeeklyDutyRoster {
   days: DutyDayAssignment[];
 }
 
+export interface WeeklyExemplaryStudentItem {
+  studentId: string;
+  content?: string;
+  conductRank?: ConductRankTT22 | string;
+  badgeTitle?: string;
+  commendationNote: string;
+}
+
+export interface WeeklyExemplaryRecord {
+  weekNumber: number; // 1..35
+  updatedAt?: string;
+  teacherComment?: string;
+  items: WeeklyExemplaryStudentItem[];
+}
+
 export interface AppState {
   schoolName: string;
   slogan: string;
@@ -249,6 +266,7 @@ export interface AppState {
   emulationRecords: EmulationRecord[];
   currentEmulationWeek?: number; // 1 to 35
   weeklyDutyRosters?: Record<number, WeeklyDutyRoster>;
+  weeklyExemplaryStudents?: Record<number, WeeklyExemplaryRecord>;
   plans: HomeroomPlan[];
   documents: DocumentItem[];
   parentContacts: ParentContact[];

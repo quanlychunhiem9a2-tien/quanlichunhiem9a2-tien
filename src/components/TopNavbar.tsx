@@ -14,13 +14,15 @@ import {
   Eye,
   Shield,
   ShieldAlert,
-  KeyRound
+  KeyRound,
+  Camera
 } from 'lucide-react';
 import { AppState, NavPage, UserAccount } from '../types';
 import { guestUserAccount } from '../mockData';
 import { isReadOnly, isTeacher, getUserRoleDescription } from '../utils/permissionUtils';
 import { LoginModal } from './LoginModal';
 import { ChangePasswordModal } from './ChangePasswordModal';
+import { processAvatarImageFile } from '../utils/avatarUpload';
 
 interface TopNavbarProps {
   appState: AppState;
@@ -55,6 +57,36 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
       currentUser: guestUserAccount,
     }));
     setShowTeacherMenu(false);
+  };
+
+  const handleCurrentUserAvatarUpload = async (file?: File | null) => {
+    if (!file || !appState.currentUser) return;
+    try {
+      const dataUrl = await processAvatarImageFile(file);
+      const currentId = appState.currentUser.id;
+      const currentStudentId = appState.currentUser.studentId;
+      onUpdateState((prev) => {
+        const updatedCurrentUser = prev.currentUser
+          ? { ...prev.currentUser, avatar: dataUrl }
+          : prev.currentUser;
+        const updatedAccounts = (prev.userAccounts || []).map((acc) =>
+          acc.id === currentId ? { ...acc, avatar: dataUrl } : acc
+        );
+        const updatedStudents = currentStudentId
+          ? prev.students.map((st) =>
+              st.id === currentStudentId ? { ...st, avatar: dataUrl } : st
+            )
+          : prev.students;
+        return {
+          ...prev,
+          currentUser: updatedCurrentUser,
+          userAccounts: updatedAccounts,
+          students: updatedStudents,
+        };
+      });
+    } catch (err) {
+      console.error('Failed to upload avatar:', err);
+    }
   };
 
   return (
@@ -230,20 +262,58 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
                     <span className="text-[10px] font-bold text-[#66809F] uppercase tracking-wider block mb-1">
                       Đang đăng nhập với quyền:
                     </span>
-                    <div className="flex items-center gap-2.5">
-                      <img
-                        src={appState.currentUser?.avatar}
-                        alt=""
-                        className="w-9 h-9 rounded-full object-cover border border-blue-200"
-                      />
-                      <div>
-                        <p className="font-extrabold text-[#17365D] text-xs">
-                          {appState.currentUser?.name}
-                        </p>
-                        <p className="text-[#0B438A] font-bold text-[11px]">
-                          {appState.currentUser?.roleTitle}
-                        </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <label
+                          title="Đổi ảnh đại diện"
+                          className="relative group/navavatar cursor-pointer shrink-0"
+                        >
+                          <img
+                            src={appState.currentUser?.avatar}
+                            alt=""
+                            referrerPolicy="no-referrer"
+                            className="w-10 h-10 rounded-full object-cover border border-blue-200 bg-white"
+                          />
+                          <span className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/navavatar:opacity-100 flex items-center justify-center text-white transition-opacity">
+                            <Camera className="w-3.5 h-3.5" />
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleCurrentUserAvatarUpload(file);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+                        <div className="min-w-0">
+                          <p className="font-extrabold text-[#17365D] text-xs truncate">
+                            {appState.currentUser?.name}
+                          </p>
+                          <p className="text-[#0B438A] font-bold text-[11px] truncate">
+                            {appState.currentUser?.roleTitle}
+                          </p>
+                        </div>
                       </div>
+                      <label
+                        title="Tải ảnh đại diện từ máy tính"
+                        className="px-2 py-1 rounded-lg bg-white hover:bg-blue-50 text-[#1677E8] border border-blue-200 font-bold text-[10.5px] inline-flex items-center gap-1 cursor-pointer shrink-0 shadow-2xs transition-colors"
+                      >
+                        <Camera className="w-3 h-3" />
+                        <span>Đổi ảnh</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleCurrentUserAvatarUpload(file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
                     </div>
                   </div>
 

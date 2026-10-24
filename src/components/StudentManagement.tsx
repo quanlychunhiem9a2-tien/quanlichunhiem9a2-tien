@@ -27,7 +27,8 @@ import {
   Check,
   Lock,
   Eye,
-  RotateCcw
+  RotateCcw,
+  Camera
 } from 'lucide-react';
 import { AppState, Student, SemesterTerm, SubjectGrades } from '../types';
 import { initialStudents } from '../mockData';
@@ -38,6 +39,7 @@ import {
   getStudentSemesterRecord
 } from '../utils/tt22Evaluation';
 import { hasPermission, isReadOnly, isTeacher } from '../utils/permissionUtils';
+import { processAvatarImageFile, PRESET_STUDENT_AVATARS } from '../utils/avatarUpload';
 
 interface StudentManagementProps {
   appState: AppState;
@@ -169,7 +171,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       parentPhone: parentPhone || '09' + Math.floor(10000000 + Math.random() * 90000000),
       parentJob,
       academicRank: '',
-      conductRank: 'Tốt',
+      conductRank: '',
+      conductEvaluated: false,
       awardTitle: '',
       gpa: 0,
       notes: notes || 'Nhập từ file Excel',
@@ -503,7 +506,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       parentPhone: '',
       parentJob: '',
       academicRank: '',
-      conductRank: 'Tốt',
+      conductRank: '',
+      conductEvaluated: false,
       awardTitle: '',
       gpa: 0,
       notes: '',
@@ -522,10 +526,56 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     setIsEditingModalOpen(true);
   };
 
+  const handleDirectStudentAvatarUpload = async (studentId: string, file?: File | null) => {
+    if (!file) return;
+    try {
+      const dataUrl = await processAvatarImageFile(file);
+      onUpdateState((prev) => {
+        const updatedStudents = prev.students.map((s) =>
+          s.id === studentId ? { ...s, avatar: dataUrl } : s
+        );
+        const updatedAccounts = (prev.userAccounts || []).map((acc) =>
+          acc.studentId === studentId ? { ...acc, avatar: dataUrl } : acc
+        );
+        const updatedCurrentUser =
+          prev.currentUser?.studentId === studentId
+            ? { ...prev.currentUser, avatar: dataUrl }
+            : prev.currentUser;
+        return {
+          ...prev,
+          students: updatedStudents,
+          userAccounts: updatedAccounts,
+          currentUser: updatedCurrentUser,
+        };
+      });
+      setActiveStudent((prev) =>
+        prev && prev.id === studentId ? { ...prev, avatar: dataUrl } : prev
+      );
+      showNotice('success', 'Đã tải lên và cập nhật ảnh đại diện học sinh thành công!');
+    } catch (err: any) {
+      showNotice('warning', err?.message || 'Không thể tải ảnh đại diện.');
+    }
+  };
+
+  const handleEditModalAvatarUpload = async (file?: File | null) => {
+    if (!file || !studentToEdit) return;
+    try {
+      const dataUrl = await processAvatarImageFile(file);
+      setStudentToEdit({ ...studentToEdit, avatar: dataUrl });
+      showNotice('info', 'Đã nạp ảnh đại diện mới. Nhấn "Lưu hồ sơ học sinh" để hoàn tất.');
+    } catch (err: any) {
+      showNotice('warning', err?.message || 'Không thể đọc tệp ảnh.');
+    }
+  };
+
   const handleSaveStudent = () => {
     if (!studentToEdit || !studentToEdit.fullName?.trim()) return;
 
-    const normalized = normalizeStudentTT22(studentToEdit as Student);
+    const studentWithConductFlag: Student = {
+      ...(studentToEdit as Student),
+      conductEvaluated: Boolean(studentToEdit.conductRank),
+    };
+    const normalized = normalizeStudentTT22(studentWithConductFlag);
 
     onUpdateState((prev) => {
       const exists = prev.students.some((s) => s.id === normalized.id);
@@ -537,9 +587,19 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       } else {
         updatedList = [normalized, ...prev.students];
       }
+      const updatedAccounts = (prev.userAccounts || []).map((acc) =>
+        acc.studentId === normalized.id
+          ? { ...acc, avatar: normalized.avatar, name: normalized.fullName }
+          : acc
+      );
+      const updatedCurrentUser =
+        prev.currentUser?.studentId === normalized.id
+          ? { ...prev.currentUser, avatar: normalized.avatar, name: normalized.fullName }
+          : ensureTeacherAccount(prev);
       return {
         ...prev,
-        currentUser: ensureTeacherAccount(prev),
+        currentUser: updatedCurrentUser,
+        userAccounts: updatedAccounts,
         students: updatedList,
       };
     });
@@ -880,17 +940,36 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                     <td className="py-3 px-3.5 font-semibold text-[#66809F]">{index + 1}</td>
                     <td className="py-3 px-3.5 font-mono text-[#0B438A] font-semibold">{s.code}</td>
                     <td className="py-3 px-3.5">
-                      <div
-                        onClick={() => setActiveStudent(s)}
-                        className="flex items-center gap-2.5 cursor-pointer"
-                      >
-                        <img
-                          src={s.avatar}
-                          alt={s.fullName}
-                          referrerPolicy="no-referrer"
-                          className="w-7 h-7 rounded-full object-cover border border-blue-200"
-                        />
-                        <span className="font-bold text-[#17365D] group-hover:text-[#1677E8]">
+                      <div className="flex items-center gap-2.5">
+                        <label
+                          onClick={(e) => e.stopPropagation()}
+                          title="Nhấn để tải ảnh đại diện mới cho học sinh"
+                          className="relative group/avatar cursor-pointer shrink-0"
+                        >
+                          <img
+                            src={s.avatar}
+                            alt={s.fullName}
+                            referrerPolicy="no-referrer"
+                            className="w-8 h-8 rounded-full object-cover border border-blue-200"
+                          />
+                          <span className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center text-white transition-opacity">
+                            <Camera className="w-3.5 h-3.5" />
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleDirectStudentAvatarUpload(s.id, file);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+                        <span
+                          onClick={() => setActiveStudent(s)}
+                          className="font-bold text-[#17365D] group-hover:text-[#1677E8] cursor-pointer"
+                        >
                           {s.fullName}
                         </span>
                       </div>
@@ -999,22 +1078,57 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             {/* Modal Header */}
             <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50/50 to-white">
               <div className="flex items-center gap-3.5">
-                <img
-                  src={activeStudent.avatar}
-                  alt={activeStudent.fullName}
-                  referrerPolicy="no-referrer"
-                  className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
-                />
+                <label
+                  title="Tải ảnh đại diện học sinh từ máy tính"
+                  className="relative group/detailavatar cursor-pointer shrink-0"
+                >
+                  <img
+                    src={activeStudent.avatar}
+                    alt={activeStudent.fullName}
+                    referrerPolicy="no-referrer"
+                    className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-sm"
+                  />
+                  <span className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/detailavatar:opacity-100 flex items-center justify-center text-white transition-opacity">
+                    <Camera className="w-4 h-4" />
+                  </span>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-[#1677E8] text-white flex items-center justify-center shadow-xs border border-white">
+                    <Camera className="w-3 h-3" />
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleDirectStudentAvatarUpload(activeStudent.id, file);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-base font-extrabold text-[#17365D]">
                       {activeStudent.fullName}
                     </h3>
                     <span className="text-xs font-mono font-bold text-[#1677E8] bg-blue-50 px-2 py-0.5 rounded-md">
                       {activeStudent.code}
                     </span>
+                    <label className="text-[11px] font-bold text-[#1677E8] hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-lg cursor-pointer inline-flex items-center gap-1 transition-colors">
+                      <Upload className="w-3 h-3" />
+                      <span>Đổi ảnh đại diện</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleDirectStudentAvatarUpload(activeStudent.id, file);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
                   </div>
-                  <p className="text-xs text-[#66809F]">
+                  <p className="text-xs text-[#66809F] mt-0.5">
                     Tổ {activeStudent.teamId} • {activeStudent.roleInClass} • Ngày sinh: {activeStudent.dateOfBirth}
                   </p>
                 </div>
@@ -1418,6 +1532,76 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             </div>
 
             <div className="p-6 overflow-y-auto space-y-4 text-xs">
+              {/* Avatar Upload Section */}
+              <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3.5">
+                  <label className="relative group/editavatar cursor-pointer shrink-0">
+                    <img
+                      src={studentToEdit.avatar || PRESET_STUDENT_AVATARS[0]}
+                      alt={studentToEdit.fullName || 'Avatar'}
+                      referrerPolicy="no-referrer"
+                      className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-md bg-white"
+                    />
+                    <span className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/editavatar:opacity-100 flex items-center justify-center text-white transition-opacity">
+                      <Camera className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleEditModalAvatarUpload(file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  <div className="space-y-1">
+                    <span className="font-extrabold text-[#17365D] block text-xs">
+                      Ảnh đại diện học sinh (Avatar)
+                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="px-3 py-1.5 rounded-xl bg-[#1677E8] hover:bg-blue-700 text-white font-bold text-[11px] inline-flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Tải ảnh từ máy tính</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleEditModalAvatarUpload(file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                      <span className="text-[10.5px] text-[#66809F]">
+                        Hỗ trợ JPG, PNG, WEBP (tự động căn chuẩn)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preset quick avatars */}
+                <div className="flex items-center gap-1.5">
+                  {PRESET_STUDENT_AVATARS.map((presetUrl, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setStudentToEdit({ ...studentToEdit, avatar: presetUrl })}
+                      title="Chọn mẫu avatar có sẵn"
+                      className={`w-7 h-7 rounded-full overflow-hidden border-2 transition-transform hover:scale-110 ${
+                        studentToEdit.avatar === presetUrl
+                          ? 'border-[#1677E8] ring-2 ring-blue-200'
+                          : 'border-white'
+                      }`}
+                    >
+                      <img src={presetUrl} alt="" className="w-full h-full object-cover bg-white" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="font-semibold text-[#17365D] block mb-1">Mã học sinh</label>
@@ -1589,10 +1773,17 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         Hạnh kiểm / Rèn luyện:
                       </label>
                       <select
-                        value={studentToEdit.conductRank || 'Tốt'}
-                        onChange={(e) => setStudentToEdit({ ...studentToEdit, conductRank: e.target.value as any })}
+                        value={studentToEdit.conductRank || ''}
+                        onChange={(e) =>
+                          setStudentToEdit({
+                            ...studentToEdit,
+                            conductRank: e.target.value as any,
+                            conductEvaluated: Boolean(e.target.value),
+                          })
+                        }
                         className="w-full px-2.5 py-1.5 rounded-xl border border-blue-200 bg-white font-bold text-emerald-800"
                       >
+                        <option value="">- (Chưa xếp loại)</option>
                         <option value="Tốt">Tốt</option>
                         <option value="Khá">Khá</option>
                         <option value="Đạt">Đạt</option>

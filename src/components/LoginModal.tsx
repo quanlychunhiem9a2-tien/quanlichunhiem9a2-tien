@@ -16,6 +16,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { UserAccount, AppState, RolePermissions } from '../types';
+import { syncUserAccountsWithStudents } from '../utils/cadreSyncUtils';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -47,7 +48,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   if (!isOpen) return null;
 
-  const userAccounts = appState.userAccounts || [];
+  const synced = syncUserAccountsWithStudents(appState);
+  const userAccounts = synced.userAccounts;
+  const activeRolePermissions = synced.rolePermissions;
   const teacherAccount = userAccounts.find((a) => a.role === 'teacher') || {
     id: 'user-gvcn',
     name: appState.teacherName,
@@ -242,7 +245,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
                   <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                     {cadreAccounts.map((acc) => {
-                      const perms = appState.rolePermissions?.[acc.role];
+                      const perms = activeRolePermissions?.[acc.role];
                       return (
                         <div
                           key={acc.id}
@@ -252,6 +255,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             <img
                               src={acc.avatar}
                               alt={acc.name}
+                              referrerPolicy="no-referrer"
                               className="w-9 h-9 rounded-full object-cover border border-gray-300 shrink-0"
                             />
                             <div className="min-w-0">
@@ -301,6 +305,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       <img
                         src={selectedCadre.avatar}
                         alt={selectedCadre.name}
+                        referrerPolicy="no-referrer"
                         className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-2xs"
                       />
                       <div>
@@ -313,7 +318,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                           </span>
                         </div>
                         <p className="text-[11px] text-emerald-900 mt-0.5">
-                          {selectedCadre.teamId ? `Phụ trách Tổ ${selectedCadre.teamId}` : 'Ban cán sự lớp 9A2'}
+                          {selectedCadre.teamId ? `Phụ trách Tổ ${selectedCadre.teamId}` : `Ban cán sự ${appState.className}`}
                         </p>
                       </div>
                     </div>
@@ -373,17 +378,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 text-[11px] text-[#66809F] space-y-1">
                     <p className="font-bold text-[#17365D]">Phạm vi quyền hạn được ủy quyền:</p>
                     <p>
-                      • {appState.rolePermissions?.[selectedCadre.role]?.canTakeAttendance
-                        ? `Được điểm danh (${appState.rolePermissions?.[selectedCadre.role]?.attendanceScope === 'own_team' ? `Tổ ${selectedCadre.teamId}` : 'Toàn lớp'})`
+                      • {activeRolePermissions?.[selectedCadre.role]?.canTakeAttendance
+                        ? `Được điểm danh (${activeRolePermissions?.[selectedCadre.role]?.attendanceScope === 'own_team' ? `Tổ ${selectedCadre.teamId}` : 'Toàn lớp'})`
                         : 'Không có quyền điểm danh'}
                     </p>
                     <p>
-                      • {appState.rolePermissions?.[selectedCadre.role]?.canRecordEmulation
-                        ? `Được ghi điểm thi đua (${appState.rolePermissions?.[selectedCadre.role]?.emulationScope === 'own_team' ? `Tổ ${selectedCadre.teamId}` : 'Toàn lớp'})`
+                      • {activeRolePermissions?.[selectedCadre.role]?.canRecordEmulation
+                        ? `Được ghi điểm thi đua (${activeRolePermissions?.[selectedCadre.role]?.emulationScope === 'own_team' ? `Tổ ${selectedCadre.teamId}` : 'Toàn lớp'})`
                         : 'Không có quyền ghi thi đua'}
                     </p>
                     <p>
-                      • {appState.rolePermissions?.[selectedCadre.role]?.canProposePlanTask
+                      • {activeRolePermissions?.[selectedCadre.role]?.canProposePlanTask
                         ? 'Được đề xuất nhiệm vụ tuần'
                         : 'Chỉ xem kế hoạch'}
                     </p>

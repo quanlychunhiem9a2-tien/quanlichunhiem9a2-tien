@@ -29,9 +29,10 @@ import {
   X
 } from 'lucide-react';
 import { AppState, EmulationRecord, Student } from '../types';
-import { hasPermission, isReadOnly } from '../utils/permissionUtils';
+import { hasPermission, isReadOnly, isTeacher } from '../utils/permissionUtils';
 import { getCurrentSchoolWeekInfo, getSchoolWeekMeta } from '../utils/dateWeekUtils';
 import { WeeklyDutyRosterPanel } from './WeeklyDutyRosterPanel';
+import { STANDARD_CLASS_ROLES, applyStudentTeamOrRoleUpdate, isRegularMemberRole } from '../utils/cadreSyncUtils';
 
 interface EmulationDisciplineProps {
   appState: AppState;
@@ -54,8 +55,49 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
   onUpdateState,
 }) => {
   const { emulationRecords, students, currentUser } = appState;
+  const isGVCN = isTeacher(appState);
   const isTeamLeader = currentUser?.role.startsWith('team_leader_');
   const userTeamId = currentUser?.teamId;
+
+  const handleChangeStudentTeamOrRole = (
+    studentId: string,
+    studentName: string,
+    updates: { teamId?: number; roleInClass?: string }
+  ) => {
+    if (!isGVCN) return;
+    onUpdateState((prev) => applyStudentTeamOrRoleUpdate(prev, studentId, updates));
+    if (updates.teamId !== undefined) {
+      showToast(`Đã chuyển học sinh ${studentName} sang Tổ ${updates.teamId}!`);
+    } else if (updates.roleInClass !== undefined) {
+      showToast(`Đã cập nhật chức danh của ${studentName} thành "${updates.roleInClass}"!`);
+    }
+  };
+
+  const handleAssignTeamLeader = (teamId: number, newLeaderId: string) => {
+    if (!isGVCN || !newLeaderId) return;
+    const targetStudent = students.find((s) => s.id === newLeaderId);
+    if (!targetStudent) return;
+    onUpdateState((prev) => {
+      const updatedStudents = prev.students.map((st) => {
+        if (st.teamId === teamId) {
+          if (st.id === newLeaderId) {
+            return { ...st, roleInClass: 'Tổ trưởng' };
+          }
+          // Demote previous Tổ trưởng of this team to Thành viên
+          if ((st.roleInClass || '').toLowerCase().includes('tổ trưởng')) {
+            return { ...st, roleInClass: 'Thành viên' };
+          }
+        }
+        return st;
+      });
+      return applyStudentTeamOrRoleUpdate(
+        { ...prev, students: updatedStudents },
+        newLeaderId,
+        { teamId, roleInClass: 'Tổ trưởng' }
+      );
+    });
+    showToast(`Đã phân công ${targetStudent.fullName} làm Tổ trưởng Tổ ${teamId}!`);
+  };
 
   // Compute latest school week from real current date
   const latestWeekInfo = useMemo(() => getCurrentSchoolWeekInfo(), []);
@@ -872,9 +914,33 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                             ({team.memberCount} thành viên)
                           </span>
                         </div>
-                        <p className="text-xs text-[#66809F] mt-0.5">
-                          Tổ trưởng: <strong className="text-[#17365D]">{team.leaderName}</strong> • Sắp xếp: Điểm cao → thấp
-                        </p>
+                        <div className="text-xs text-[#66809F] mt-1 flex flex-wrap items-center gap-1.5">
+                          <span>Tổ trưởng:</span>
+                          {isGVCN ? (
+                            <select
+                              value={
+                                team.members.find((m) =>
+                                  (m.student.roleInClass || '').toLowerCase().includes('tổ trưởng')
+                                )?.student.id || ''
+                              }
+                              onChange={(e) => handleAssignTeamLeader(team.teamId, e.target.value)}
+                              title="Chọn học sinh làm Tổ trưởng của tổ này"
+                              className="px-2 py-0.5 rounded-lg bg-white border border-blue-200 font-bold text-[#17365D] text-xs focus:outline-hidden focus:ring-2 focus:ring-[#1677E8] cursor-pointer"
+                            >
+                              <option value="" disabled>
+                                -- Chọn Tổ trưởng --
+                              </option>
+                              {team.members.map((m) => (
+                                <option key={m.student.id} value={m.student.id}>
+                                  {m.student.fullName}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <strong className="text-[#17365D]">{team.leaderName}</strong>
+                          )}
+                          <span className="hidden sm:inline">• Sắp xếp: Điểm cao → thấp</span>
+                        </div>
                       </div>
                     </div>
 
@@ -954,7 +1020,7 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                                   </span>
                                 </td>
 
-                                {/* Student Info & Note */}
+                                {/* Student Info, Team & Role Editor, Note */}
                                 <td className="py-2.5 px-3">
                                   <div className="flex items-center gap-2.5">
                                     <img
@@ -963,15 +1029,74 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                                       referrerPolicy="no-referrer"
                                       className="w-7 h-7 rounded-full object-cover border border-blue-200 shrink-0"
                                     />
-                                    <div className="min-w-0">
+                                    <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-1.5 flex-wrap">
                                         <span className="font-bold text-[#17365D] truncate">
                                           {student.fullName}
                                         </span>
-                                        {student.roleInClass !== 'Thành viên' && (
-                                          <span className="px-1.5 py-0.2 rounded bg-blue-50 text-[#1677E8] font-bold text-[10px] border border-blue-200">
-                                            {student.roleInClass}
-                                          </span>
+                                        {isGVCN ? (
+                                          <div className="inline-flex items-center gap-1 flex-wrap">
+                                            {/* Change Team Dropdown */}
+                                            <select
+                                              value={student.teamId}
+                                              onChange={(e) =>
+                                                handleChangeStudentTeamOrRole(
+                                                  student.id,
+                                                  student.fullName,
+                                                  { teamId: Number(e.target.value) }
+                                                )
+                                              }
+                                              title="Đổi Tổ cho học sinh này"
+                                              className="px-1.5 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-[#0B438A] font-bold text-[10px] border border-blue-200 cursor-pointer focus:outline-hidden"
+                                            >
+                                              <option value={1}>Tổ 1</option>
+                                              <option value={2}>Tổ 2</option>
+                                              <option value={3}>Tổ 3</option>
+                                              <option value={4}>Tổ 4</option>
+                                            </select>
+
+                                            {/* Change Role Dropdown */}
+                                            <select
+                                              value={
+                                                STANDARD_CLASS_ROLES.includes(student.roleInClass)
+                                                  ? student.roleInClass
+                                                  : isRegularMemberRole(student.roleInClass)
+                                                  ? 'Thành viên'
+                                                  : student.roleInClass
+                                              }
+                                              onChange={(e) =>
+                                                handleChangeStudentTeamOrRole(
+                                                  student.id,
+                                                  student.fullName,
+                                                  { roleInClass: e.target.value }
+                                                )
+                                              }
+                                              title="Đổi chức danh cán sự lớp / tổ cho học sinh này"
+                                              className={`px-1.5 py-0.5 rounded font-bold text-[10px] border cursor-pointer focus:outline-hidden ${
+                                                !isRegularMemberRole(student.roleInClass)
+                                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                                  : 'bg-gray-50 text-[#66809F] border-gray-200 hover:bg-gray-100'
+                                              }`}
+                                            >
+                                              {!STANDARD_CLASS_ROLES.includes(student.roleInClass) &&
+                                                !isRegularMemberRole(student.roleInClass) && (
+                                                  <option value={student.roleInClass}>
+                                                    {student.roleInClass}
+                                                  </option>
+                                                )}
+                                              {STANDARD_CLASS_ROLES.map((roleOpt) => (
+                                                <option key={roleOpt} value={roleOpt}>
+                                                  {roleOpt}
+                                                </option>
+                                              ))}
+                                            </select>
+                                          </div>
+                                        ) : (
+                                          !isRegularMemberRole(student.roleInClass) && (
+                                            <span className="px-1.5 py-0.2 rounded bg-blue-50 text-[#1677E8] font-bold text-[10px] border border-blue-200">
+                                              {student.roleInClass}
+                                            </span>
+                                          )
                                         )}
                                       </div>
                                       <p className="text-[10.5px] text-[#66809F] truncate mt-0.5">

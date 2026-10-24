@@ -39,6 +39,11 @@ import { initialUserAccounts, defaultRolePermissions } from '../mockData';
 import { hasPermission, isReadOnly, isTeacher } from '../utils/permissionUtils';
 import { SupabaseConnectPanel } from './SupabaseConnectPanel';
 import { processAvatarImageFile, PRESET_TEACHER_AVATARS } from '../utils/avatarUpload';
+import {
+  syncUserAccountsWithStudents,
+  STANDARD_CLASS_ROLES,
+  applyStudentTeamOrRoleUpdate
+} from '../utils/cadreSyncUtils';
 
 interface SystemSettingsProps {
   appState: AppState;
@@ -101,8 +106,9 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
     canConfigureSystem: false,
   });
 
-  const userAccounts: UserAccount[] = appState.userAccounts || initialUserAccounts;
-  const currentUser: UserAccount = appState.currentUser || userAccounts[0];
+  const syncedCadres = syncUserAccountsWithStudents(appState);
+  const userAccounts: UserAccount[] = syncedCadres.userAccounts;
+  const currentUser: UserAccount = syncedCadres.currentUser;
   const isGVCN = isTeacher(appState);
   const readOnly = isReadOnly(appState);
 
@@ -353,11 +359,31 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
     };
 
     setPermissionsState(updatedPermissions);
-    onUpdateState((prev) => ({
-      ...prev,
-      userAccounts: updatedAccounts,
-      rolePermissions: updatedPermissions,
-    }));
+    onUpdateState((prev) => {
+      const updatedStudents = selectedStudentId
+        ? prev.students.map((st) =>
+            st.id === selectedStudentId
+              ? {
+                  ...st,
+                  roleInClass: newAcc.roleTitle,
+                  teamId: newAccountTeamId || st.teamId,
+                }
+              : st
+          )
+        : prev.students;
+      const synced = syncUserAccountsWithStudents({
+        ...prev,
+        students: updatedStudents,
+        userAccounts: [...userAccounts.filter((a) => a.studentId !== selectedStudentId || !selectedStudentId), newAcc],
+        rolePermissions: updatedPermissions,
+      });
+      return {
+        ...prev,
+        students: updatedStudents,
+        userAccounts: synced.userAccounts,
+        rolePermissions: synced.rolePermissions,
+      };
+    });
 
     setShowAddModal(false);
     // Reset form
@@ -424,28 +450,118 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
       newCurrent = userAccounts[0];
     }
 
-    onUpdateState((prev) => ({
-      ...prev,
-      userAccounts: updatedAccounts,
-      currentUser: newCurrent,
-    }));
+    onUpdateState((prev) => {
+      const updatedStudents = accountToDelete.studentId
+        ? prev.students.map((st) =>
+            st.id === accountToDelete.studentId
+              ? { ...st, roleInClass: 'Thành viên' }
+              : st
+          )
+        : prev.students;
+      const synced = syncUserAccountsWithStudents({
+        ...prev,
+        students: updatedStudents,
+        userAccounts: updatedAccounts,
+        currentUser: newCurrent,
+      });
+      return {
+        ...prev,
+        students: updatedStudents,
+        userAccounts: synced.userAccounts,
+        currentUser: synced.currentUser,
+      };
+    });
 
     setAccountToDelete(null);
   };
 
-  // Handle Save Edit Account
+  // Handle Save Edit Account (including roleTitle, teamId, studentId, and permissions)
+  const handleUpdateCadreAccountMeta = (
+    account: UserAccount,
+    updates: { roleTitle?: string; teamId?: number; studentId?: string }
+  ) => {
+    if (!isGVCN) {
+      alert('Chỉ tài khoản Giáo viên chủ nhiệm mới có quyền chỉnh sửa tổ và chức danh cán sự!');
+      return;
+    }
+
+    onUpdateState((prev) => {
+      // If changing which student holds this cadre position
+      if (updates.studentId && updates.studentId !== account.studentId) {
+        const cleanTitle = (updates.roleTitle || account.roleTitle).replace(/\s*Tổ\s*\d+/i, '').trim() || 'Cán sự lớp';
+        const updatedStudents = prev.students.map((st) => {
+          if (st.id === account.studentId) {
+            return { ...st, roleInClass: 'Thành viên' };
+          }
+          if (st.id === updates.studentId) {
+            return {
+              ...st,
+              roleInClass: cleanTitle,
+              teamId: updates.teamId !== undefined ? updates.teamId : st.teamId,
+            };
+          }
+          return st;
+        });
+        const synced = syncUserAccountsWithStudents({
+          ...prev,
+          students: updatedStudents,
+          rolePermissions: permissionsState,
+        });
+        return {
+          ...prev,
+          students: updatedStudents,
+          userAccounts: synced.userAccounts,
+          rolePermissions: synced.rolePermissions,
+          currentUser: synced.currentUser,
+        };
+      }
+
+      // If account is linked to a studentId, update that student's teamId & roleInClass
+      if (account.studentId) {
+        return applyStudentTeamOrRoleUpdate(
+          {
+            ...prev,
+            rolePermissions: permissionsState,
+          },
+          account.studentId,
+          {
+            teamId: updates.teamId,
+            roleInClass: updates.roleTitle,
+          }
+        );
+      }
+
+      // Manual account without studentId
+      const updatedManualAccounts = (prev.userAccounts || []).map((a) =>
+        a.id === account.id
+          ? {
+              ...a,
+              roleTitle: updates.roleTitle !== undefined ? updates.roleTitle : a.roleTitle,
+              teamId: updates.teamId !== undefined ? updates.teamId : a.teamId,
+            }
+          : a
+      );
+      return {
+        ...prev,
+        userAccounts: updatedManualAccounts,
+        rolePermissions: permissionsState,
+      };
+    });
+  };
+
   const handleSaveEditPermissions = () => {
     if (!isGVCN) {
       alert('Chỉ tài khoản Giáo viên chủ nhiệm mới có quyền lưu chỉnh sửa phân quyền!');
       return;
     }
     if (!editingAccount) return;
-    onUpdateState((prev) => ({
-      ...prev,
-      rolePermissions: permissionsState,
-    }));
+    handleUpdateCadreAccountMeta(editingAccount, {
+      roleTitle: editingAccount.roleTitle,
+      teamId: editingAccount.teamId,
+      studentId: editingAccount.studentId,
+    });
     setEditingAccount(null);
-    alert('Đã cập nhật chi tiết phân quyền cho vai trò!');
+    alert('Đã cập nhật chức danh, tổ phụ trách và phân quyền chi tiết cho vai trò!');
   };
 
   const handleBackupJSON = () => {
@@ -851,7 +967,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                                 }}
                               />
                             </label>
-                            <div>
+                            <div className="min-w-0">
                               <div className="flex items-center gap-1.5">
                                 <span className="font-extrabold text-[#17365D] block">
                                   {account.name}
@@ -860,17 +976,75 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                                   <span className="w-2 h-2 rounded-full bg-emerald-500" title="Đang đăng nhập" />
                                 )}
                               </div>
-                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5 ${
-                                account.category === 'GVCN'
-                                  ? 'bg-blue-100 text-[#0B438A]'
-                                  : account.category === 'Ban cán sự'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : account.category === 'Tổ trưởng'
-                                  ? 'bg-amber-100 text-amber-800'
-                                  : 'bg-purple-100 text-purple-800'
-                              }`}>
-                                {account.roleTitle} {account.teamId ? `(Tổ ${account.teamId})` : ''}
-                              </span>
+                              {isTeacher ? (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5 bg-blue-100 text-[#0B438A]">
+                                  {account.roleTitle}
+                                </span>
+                              ) : isGVCN ? (
+                                <div className="flex flex-wrap items-center gap-1 mt-1">
+                                  {/* Inline Role Title Selector */}
+                                  <select
+                                    value={
+                                      STANDARD_CLASS_ROLES.includes(account.roleTitle)
+                                        ? account.roleTitle
+                                        : account.roleTitle
+                                    }
+                                    onChange={(e) =>
+                                      handleUpdateCadreAccountMeta(account, {
+                                        roleTitle: e.target.value,
+                                      })
+                                    }
+                                    title="Đổi chức danh cán sự"
+                                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded border cursor-pointer focus:outline-hidden ${
+                                      account.category === 'Ban cán sự'
+                                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                        : account.category === 'Tổ trưởng'
+                                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                        : 'bg-purple-50 text-purple-800 border-purple-200'
+                                    }`}
+                                  >
+                                    {!STANDARD_CLASS_ROLES.includes(account.roleTitle) && (
+                                      <option value={account.roleTitle}>{account.roleTitle}</option>
+                                    )}
+                                    {STANDARD_CLASS_ROLES.filter((r) => r !== 'Thành viên').map(
+                                      (roleOpt) => (
+                                        <option key={roleOpt} value={roleOpt}>
+                                          {roleOpt}
+                                        </option>
+                                      )
+                                    )}
+                                  </select>
+
+                                  {/* Inline Team Selector */}
+                                  <select
+                                    value={account.teamId || 1}
+                                    onChange={(e) =>
+                                      handleUpdateCadreAccountMeta(account, {
+                                        teamId: Number(e.target.value),
+                                      })
+                                    }
+                                    title="Đổi Tổ của cán sự này"
+                                    className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-[#0B438A] border border-blue-200 cursor-pointer focus:outline-hidden"
+                                  >
+                                    <option value={1}>Tổ 1</option>
+                                    <option value={2}>Tổ 2</option>
+                                    <option value={3}>Tổ 3</option>
+                                    <option value={4}>Tổ 4</option>
+                                  </select>
+                                </div>
+                              ) : (
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5 ${
+                                  account.category === 'GVCN'
+                                    ? 'bg-blue-100 text-[#0B438A]'
+                                    : account.category === 'Ban cán sự'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : account.category === 'Tổ trưởng'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : 'bg-purple-100 text-purple-800'
+                                }`}>
+                                  {account.roleTitle} {account.teamId ? `(Tổ ${account.teamId})` : ''}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -1844,6 +2018,76 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
             </div>
 
             <div className="space-y-4 text-xs">
+              {/* Edit Cadre Student, Role Title & Team */}
+              {editingAccount.role !== 'teacher' && (
+                <div className="p-3.5 rounded-2xl bg-blue-50/50 border border-blue-200/80 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="font-bold text-[#17365D] block mb-1">
+                      Học sinh đảm nhiệm:
+                    </label>
+                    <select
+                      value={editingAccount.studentId || ''}
+                      onChange={(e) => {
+                        const st = appState.students.find((s) => s.id === e.target.value);
+                        if (st) {
+                          setEditingAccount({
+                            ...editingAccount,
+                            studentId: st.id,
+                            name: st.fullName,
+                            avatar: st.avatar,
+                            teamId: st.teamId,
+                          });
+                        }
+                      }}
+                      className="w-full px-2.5 py-2 rounded-xl border border-gray-200 bg-white font-semibold text-[#17365D]"
+                    >
+                      <option value="">-- Chọn học sinh --</option>
+                      {appState.students.map((st) => (
+                        <option key={st.id} value={st.id}>
+                          {st.fullName} (Tổ {st.teamId})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-[#17365D] block mb-1">
+                      Chức danh cán sự:
+                    </label>
+                    <input
+                      type="text"
+                      value={editingAccount.roleTitle}
+                      onChange={(e) =>
+                        setEditingAccount({ ...editingAccount, roleTitle: e.target.value })
+                      }
+                      placeholder="VD: Lớp trưởng, Tổ trưởng..."
+                      className="w-full px-2.5 py-2 rounded-xl border border-gray-200 bg-white font-bold text-[#17365D]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-[#17365D] block mb-1">
+                      Thuộc Tổ / Phụ trách Tổ:
+                    </label>
+                    <select
+                      value={editingAccount.teamId || 1}
+                      onChange={(e) =>
+                        setEditingAccount({
+                          ...editingAccount,
+                          teamId: Number(e.target.value),
+                        })
+                      }
+                      className="w-full px-2.5 py-2 rounded-xl border border-gray-200 bg-white font-bold text-[#0B438A]"
+                    >
+                      <option value={1}>Tổ 1</option>
+                      <option value={2}>Tổ 2</option>
+                      <option value={3}>Tổ 3</option>
+                      <option value={4}>Tổ 4</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
               {/* Scope selectors */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>

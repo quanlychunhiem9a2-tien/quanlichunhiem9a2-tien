@@ -40,6 +40,12 @@ import {
 } from '../utils/tt22Evaluation';
 import { hasPermission, isReadOnly, isTeacher } from '../utils/permissionUtils';
 import { processAvatarImageFile, PRESET_STUDENT_AVATARS } from '../utils/avatarUpload';
+import {
+  syncUserAccountsWithStudents,
+  STANDARD_CLASS_ROLES,
+  applyStudentTeamOrRoleUpdate,
+  isRegularMemberRole
+} from '../utils/cadreSyncUtils';
 
 interface StudentManagementProps {
   appState: AppState;
@@ -411,9 +417,16 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
         };
       }
 
+      const syncedCadres = syncUserAccountsWithStudents({
+        ...prev,
+        students: finalStudents,
+      });
+
       return {
         ...prev,
         students: finalStudents,
+        userAccounts: syncedCadres.userAccounts,
+        rolePermissions: syncedCadres.rolePermissions,
         attendanceHistory: updatedAttendanceHistory,
       };
     });
@@ -568,6 +581,28 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     }
   };
 
+  const handleInlineTeamOrRoleChange = (
+    student: Student,
+    updates: { teamId?: number; roleInClass?: string }
+  ) => {
+    onUpdateState((prev) => {
+      const nextState = applyStudentTeamOrRoleUpdate(
+        {
+          ...prev,
+          currentUser: ensureTeacherAccount(prev),
+        },
+        student.id,
+        updates
+      );
+      return nextState;
+    });
+    if (updates.teamId !== undefined) {
+      showNotice('success', `Đã chuyển học sinh "${student.fullName}" sang Tổ ${updates.teamId}!`);
+    } else if (updates.roleInClass !== undefined) {
+      showNotice('success', `Đã cập nhật chức vụ của "${student.fullName}" thành "${updates.roleInClass}"!`);
+    }
+  };
+
   const handleSaveStudent = () => {
     if (!studentToEdit || !studentToEdit.fullName?.trim()) return;
 
@@ -587,11 +622,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       } else {
         updatedList = [normalized, ...prev.students];
       }
-      const updatedAccounts = (prev.userAccounts || []).map((acc) =>
-        acc.studentId === normalized.id
-          ? { ...acc, avatar: normalized.avatar, name: normalized.fullName }
-          : acc
-      );
+      const syncedCadres = syncUserAccountsWithStudents({
+        ...prev,
+        students: updatedList,
+      });
       const updatedCurrentUser =
         prev.currentUser?.studentId === normalized.id
           ? { ...prev.currentUser, avatar: normalized.avatar, name: normalized.fullName }
@@ -599,7 +633,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       return {
         ...prev,
         currentUser: updatedCurrentUser,
-        userAccounts: updatedAccounts,
+        userAccounts: syncedCadres.userAccounts,
+        rolePermissions: syncedCadres.rolePermissions,
         students: updatedList,
       };
     });
@@ -619,11 +654,20 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   const handleConfirmDeleteSingle = () => {
     if (!studentToDelete) return;
     const { id, name } = studentToDelete;
-    onUpdateState((prev) => ({
-      ...prev,
-      currentUser: ensureTeacherAccount(prev),
-      students: prev.students.filter((s) => s.id !== id),
-    }));
+    onUpdateState((prev) => {
+      const remainingStudents = prev.students.filter((s) => s.id !== id);
+      const syncedCadres = syncUserAccountsWithStudents({
+        ...prev,
+        students: remainingStudents,
+      });
+      return {
+        ...prev,
+        currentUser: ensureTeacherAccount(prev),
+        students: remainingStudents,
+        userAccounts: syncedCadres.userAccounts,
+        rolePermissions: syncedCadres.rolePermissions,
+      };
+    });
     if (activeStudent?.id === id) {
       setActiveStudent(null);
     }
@@ -641,22 +685,39 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
 
   const handleConfirmDeleteAll = () => {
     const count = students.length;
-    onUpdateState((prev) => ({
-      ...prev,
-      currentUser: ensureTeacherAccount(prev),
-      students: [],
-    }));
+    onUpdateState((prev) => {
+      const syncedCadres = syncUserAccountsWithStudents({
+        ...prev,
+        students: [],
+      });
+      return {
+        ...prev,
+        currentUser: ensureTeacherAccount(prev),
+        students: [],
+        userAccounts: syncedCadres.userAccounts,
+        rolePermissions: syncedCadres.rolePermissions,
+      };
+    });
     setActiveStudent(null);
     setIsDeleteAllModalOpen(false);
     showNotice('success', `Đã xóa toàn bộ ${count} hồ sơ học sinh khỏi danh sách lớp ${appState.className}.`);
   };
 
   const handleRestoreSampleStudents = () => {
-    onUpdateState((prev) => ({
-      ...prev,
-      currentUser: ensureTeacherAccount(prev),
-      students: initialStudents.map(normalizeStudentTT22),
-    }));
+    onUpdateState((prev) => {
+      const restoredStudents = initialStudents.map(normalizeStudentTT22);
+      const syncedCadres = syncUserAccountsWithStudents({
+        ...prev,
+        students: restoredStudents,
+      });
+      return {
+        ...prev,
+        currentUser: ensureTeacherAccount(prev),
+        students: restoredStudents,
+        userAccounts: syncedCadres.userAccounts,
+        rolePermissions: syncedCadres.rolePermissions,
+      };
+    });
     showNotice('success', `Đã khôi phục danh sách mẫu gồm ${initialStudents.length} hồ sơ học sinh lớp 9A2.`);
   };
 
@@ -977,11 +1038,50 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                     <td className="py-3 px-3.5 text-[#66809F] font-mono">{s.dateOfBirth}</td>
                     <td className="py-3 px-3.5 text-[#66809F]">{s.gender}</td>
                     <td className="py-3 px-3.5">
-                      <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[#0B438A] font-semibold text-[11px]">
-                        Tổ {s.teamId}
-                      </span>
+                      <select
+                        value={s.teamId}
+                        onChange={(e) =>
+                          handleInlineTeamOrRoleChange(s, { teamId: Number(e.target.value) })
+                        }
+                        title="Nhấn để đổi Tổ cho học sinh"
+                        className="px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#0B438A] font-bold text-[11px] border border-blue-200/80 cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-[#1677E8]"
+                      >
+                        <option value={1}>Tổ 1</option>
+                        <option value={2}>Tổ 2</option>
+                        <option value={3}>Tổ 3</option>
+                        <option value={4}>Tổ 4</option>
+                      </select>
                     </td>
-                    <td className="py-3 px-3.5 text-[#66809F] font-medium">{s.roleInClass}</td>
+                    <td className="py-3 px-3.5">
+                      <select
+                        value={
+                          STANDARD_CLASS_ROLES.includes(s.roleInClass)
+                            ? s.roleInClass
+                            : isRegularMemberRole(s.roleInClass)
+                            ? 'Thành viên'
+                            : s.roleInClass
+                        }
+                        onChange={(e) =>
+                          handleInlineTeamOrRoleChange(s, { roleInClass: e.target.value })
+                        }
+                        title="Nhấn để đổi chức danh cán sự lớp / tổ"
+                        className={`px-2 py-1 rounded-lg text-[11px] font-bold border cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-[#1677E8] ${
+                          !isRegularMemberRole(s.roleInClass)
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                            : 'bg-gray-50 text-[#66809F] border-gray-200 hover:bg-gray-100'
+                        }`}
+                      >
+                        {!STANDARD_CLASS_ROLES.includes(s.roleInClass) &&
+                          !isRegularMemberRole(s.roleInClass) && (
+                            <option value={s.roleInClass}>{s.roleInClass}</option>
+                          )}
+                        {STANDARD_CLASS_ROLES.map((roleOpt) => (
+                          <option key={roleOpt} value={roleOpt}>
+                            {roleOpt}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
                     
                     {/* Học lực TT22 */}
                     <td className="py-3 px-3 text-center">
@@ -1656,13 +1756,45 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="font-semibold text-[#17365D] block mb-1">Chức vụ trong lớp</label>
-                  <input
-                    type="text"
-                    value={studentToEdit.roleInClass || 'Thành viên'}
-                    onChange={(e) => setStudentToEdit({ ...studentToEdit, roleInClass: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs"
-                  />
+                  <label className="font-semibold text-[#17365D] block mb-1">Chức vụ / Chức danh cán sự lớp</label>
+                  <div className="space-y-1.5">
+                    <select
+                      value={
+                        STANDARD_CLASS_ROLES.includes(studentToEdit.roleInClass || '')
+                          ? studentToEdit.roleInClass
+                          : isRegularMemberRole(studentToEdit.roleInClass)
+                          ? 'Thành viên'
+                          : '__custom__'
+                      }
+                      onChange={(e) => {
+                        if (e.target.value === '__custom__') {
+                          setStudentToEdit({ ...studentToEdit, roleInClass: 'Cán sự lớp' });
+                        } else {
+                          setStudentToEdit({ ...studentToEdit, roleInClass: e.target.value });
+                        }
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-semibold text-[#17365D]"
+                    >
+                      {STANDARD_CLASS_ROLES.map((roleOpt) => (
+                        <option key={roleOpt} value={roleOpt}>
+                          {roleOpt}
+                        </option>
+                      ))}
+                      <option value="__custom__">+ Nhập chức danh khác...</option>
+                    </select>
+                    {(!STANDARD_CLASS_ROLES.includes(studentToEdit.roleInClass || '') &&
+                      !isRegularMemberRole(studentToEdit.roleInClass)) && (
+                      <input
+                        type="text"
+                        value={studentToEdit.roleInClass || ''}
+                        onChange={(e) =>
+                          setStudentToEdit({ ...studentToEdit, roleInClass: e.target.value })
+                        }
+                        placeholder="Nhập chức danh cán sự..."
+                        className="w-full px-3 py-2 rounded-xl border border-blue-300 text-xs focus:ring-2 focus:ring-[#1677E8]"
+                      />
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="font-semibold text-[#17365D] block mb-1">Họ tên Phụ huynh</label>

@@ -1,0 +1,2256 @@
+{
+  "plans": [
+    {
+      "id": "plan-w1",
+      "goals": [
+        "Nhanh chóng ổn định tổ chức lớp, bầu Ban cán sự lâm thời",
+        "Chuẩn bị chu đáo lễ Khai giảng năm học mới ngày 05/09",
+        "Phổ biến nội quy nhà trường và quy chế thi đua năm học 2026 - 2027"
+      ],
+      "tasks": [
+        {
+          "id": "pt-w1-1",
+          "day": "Thứ Ba (01/09)",
+          "done": true,
+          "content": "Tập trung học sinh nhận lớp, phát thời khóa biểu tạm thời",
+          "responsible": "GVCN & Lớp trưởng"
+        },
+        {
+          "id": "pt-w1-2",
+          "day": "Thứ Năm (03/09)",
+          "done": true,
+          "content": "Tập dượt nghi thức diễu hành và xếp hàng khai giảng",
+          "responsible": "BCH Chi đội & Cả lớp"
+        },
+        {
+          "id": "pt-w1-3",
+          "day": "Thứ Bảy (05/09)",
+          "done": true,
+          "content": "Dự Lễ Khai giảng năm học mới 2026-2027 toàn trường",
+          "responsible": "GVCN & Toàn thể HS"
+        }
+      ],
+      "theme": "Chào năm học mới & Ổn định nề nếp lớp học",
+      "title": "Kế hoạch công tác chủ nhiệm Tuần 1 (Tháng 9/2026)",
+      "period": "Tuần",
+      "endDate": "12/09/2026",
+      "measures": [
+        "Sinh hoạt đầu năm giới thiệu danh sách lớp và phân công chỗ ngồi khoa học",
+        "Phân công 4 tổ trực nhật, bàn giao cơ sở vật chất phòng học 302",
+        "Lập nhóm Zalo liên lạc phụ huynh học sinh lớp 9A2"
+      ],
+      "semester": 1,
+      "startDate": "07/09/2026",
+      "weekNumber": 1,
+      "reviewNotes": "Lớp tập trung đúng giờ, 100% học sinh mặc đồng phục trang nghiêm trong ngày khai giảng. Ban cán sự lâm thời hoạt động nhiệt tình.",
+      "coordination": {
+        "parents": "Gửi danh mục SGK và đồ dùng học tập cần chuẩn bị cho lớp 9",
+        "youthUnion": "Đăng ký danh sách thi đua nề nếp chi đội 9A2",
+        "subjectTeachers": "Thống nhất kế hoạch kiểm tra khảo sát chất lượng đầu năm môn Toán, Văn, Anh"
+      },
+      "specialStudents": [
+        {
+          "reason": "Học lực đầu năm còn yếu môn Tiếng Anh và Toán",
+          "studentId": "hs-38",
+          "actionPlan": "Sắp xếp ngồi cùng bàn bạn Nguyễn Minh Anh kèm cặp",
+          "studentName": "Nguyễn Đăng Khoa"
+        }
+      ]
+    },
+    {
+      "id": "plan-1",
+      "goals": [
+        "Ổn định sĩ số, duy trì nề nếp 15 phút truy bài đầu giờ nghiêm túc",
+        "Chuẩn bị chu đáo nội dung Đại hội Chi đội và Đại hội Cha mẹ học sinh đầu năm",
+        "Đôn đốc phong trào tự học, khởi động mô hình \"Đôi bạn cùng tiến\""
+      ],
+      "tasks": [
+        {
+          "id": "pt-1",
+          "day": "Thứ Hai (08/09)",
+          "done": true,
+          "content": "Chào cờ đầu tuần, sinh hoạt chủ điểm \"Tự hào truyền thống trường Võ Thị Sáu\"",
+          "responsible": "GVCN & Cả lớp"
+        },
+        {
+          "id": "pt-2",
+          "day": "Thứ Ba (09/09)",
+          "done": true,
+          "content": "Kiểm tra sách vở, phân chia đôi bạn cùng tiến môn Toán và Tiếng Anh",
+          "responsible": "Lớp phó học tập"
+        },
+        {
+          "id": "pt-3",
+          "day": "Thứ Năm (11/09)",
+          "done": true,
+          "content": "Tổ chức Đại hội Phụ huynh học sinh lớp 9A2 đầu năm học",
+          "responsible": "GVCN"
+        },
+        {
+          "id": "pt-4",
+          "day": "Thứ Sáu (12/09)",
+          "done": false,
+          "content": "Rà soát sổ theo dõi thi đua 4 tổ, chấm điểm trực nhật phòng học",
+          "responsible": "Lớp phó đời sống"
+        },
+        {
+          "id": "pt-5",
+          "day": "Thứ Bảy (13/09)",
+          "done": false,
+          "content": "Tiết sinh hoạt lớp, tổng kết thi đua tuần 2 và khen thưởng học sinh tiêu biểu",
+          "responsible": "Ban cán sự & GVCN"
+        }
+      ],
+      "theme": "Phát động phong trào thi đua \"Hoa điểm tốt\"",
+      "title": "Kế hoạch công tác chủ nhiệm Tuần 2 (Tháng 9/2026)",
+      "period": "Tuần",
+      "endDate": "19/09/2026",
+      "measures": [
+        "Phân công ban cán sự kiểm tra thẻ học sinh, khăn quàng đỏ từ cổng lớp",
+        "Gặp gỡ động viên 3 học sinh có học lực trung bình - yếu (Đạt, Trung, Khoa)",
+        "Trao đổi qua Zalo nhóm lớp về lịch họp phụ huynh ngày 11/09"
+      ],
+      "semester": 1,
+      "startDate": "14/09/2026",
+      "weekNumber": 2,
+      "reviewNotes": "Tuần 2 nề nếp duy trì tương đối tốt, điểm thi đua toàn lớp đạt 385/400 (xếp thứ 2 toàn khối 9). Cuộc họp PHHS diễn ra thành công với 100% phụ huynh có mặt.",
+      "coordination": {
+        "parents": "Thông báo kết quả buổi họp phụ huynh đầu năm và kế hoạch học tập lớp 9",
+        "youthUnion": "Nộp biên bản đăng ký giao ước thi đua Chi đội 9A2",
+        "subjectTeachers": "Trao đổi với cô Lan (GV Toán) và thầy Nam (GV Văn) về học lực các em nhóm yếu"
+      },
+      "specialStudents": [
+        {
+          "reason": "Học lực còn chậm, cần kiểm tra việc làm bài tập ở nhà",
+          "studentId": "hs-38",
+          "actionPlan": "Phân công lớp trưởng kiểm tra bài trước giờ truy bài",
+          "studentName": "Nguyễn Đăng Khoa"
+        },
+        {
+          "reason": "Thường xuyên đi trễ 5-10 phút đầu giờ học",
+          "studentId": "hs-37",
+          "actionPlan": "Liên hệ phụ huynh nhắc nhở đi học sớm trước 7h00",
+          "studentName": "Phạm Tiến Đạt"
+        }
+      ]
+    },
+    {
+      "id": "plan-w3",
+      "goals": [
+        "100% học sinh ký cam kết chấp hành nghiêm chỉnh luật An toàn giao thông",
+        "Đẩy mạnh phong trào học tập, không có học sinh bị điểm dưới trung bình",
+        "Tập luyện chuẩn bị cho Hội thi Văn nghệ chào mừng năm học mới"
+      ],
+      "tasks": [
+        {
+          "id": "pt-w3-1",
+          "day": "Thứ Hai (15/09)",
+          "done": false,
+          "content": "Chào cờ, ký cam kết ATGT và không bạo lực học đường",
+          "responsible": "GVCN & Toàn thể HS"
+        },
+        {
+          "id": "pt-w3-2",
+          "day": "Thứ Ba (16/09)",
+          "done": false,
+          "content": "Kiểm tra đột xuất nề nếp đội mũ bảo hiểm khi đi xe máy/xe đạp điện",
+          "responsible": "Cờ đỏ & Lớp phó nề nếp"
+        },
+        {
+          "id": "pt-w3-3",
+          "day": "Thứ Tư (17/09)",
+          "done": false,
+          "content": "Bắt đầu lịch phụ đạo học sinh yếu môn Tiếng Anh buổi chiều",
+          "responsible": "GVCN & Cô giáo Tiếng Anh"
+        },
+        {
+          "id": "pt-w3-4",
+          "day": "Thứ Sáu (19/09)",
+          "done": false,
+          "content": "Kiểm tra vệ sinh môi trường, chăm sóc công trình măng non chi đội",
+          "responsible": "Tổ 1 & Tổ 2"
+        },
+        {
+          "id": "pt-w3-5",
+          "day": "Thứ Bảy (20/09)",
+          "done": false,
+          "content": "Sinh hoạt lớp: Rèn luyện kỹ năng ứng xử văn hóa trên mạng xã hội",
+          "responsible": "BCH Chi đội & GVCN"
+        }
+      ],
+      "theme": "Thực hiện An toàn giao thông & Văn hóa học đường",
+      "title": "Kế hoạch công tác chủ nhiệm Tuần 3 (Tháng 9/2026)",
+      "period": "Tuần",
+      "endDate": "26/09/2026",
+      "measures": [
+        "Tổ chức chuyên đề sinh hoạt 15 phút về kỹ năng đi xe đạp điện an toàn",
+        "Tăng cường kiểm tra bài cũ đột xuất trong các giờ tự quản",
+        "Thành lập đội tuyển học sinh giỏi cấp trường các môn Toán, Văn, Anh"
+      ],
+      "semester": 1,
+      "startDate": "21/09/2026",
+      "weekNumber": 3,
+      "reviewNotes": "",
+      "coordination": {
+        "parents": "Nhắc nhở phụ huynh trang bị mũ bảo hiểm đạt chuẩn cho con",
+        "youthUnion": "Tham gia chấm thi đua công trình măng non cấp liên đội",
+        "subjectTeachers": "Nắm danh sách học sinh tham gia bồi dưỡng HSG lớp 9"
+      },
+      "specialStudents": [
+        {
+          "reason": "Theo dõi sự cải thiện về giờ giấc đến lớp",
+          "studentId": "hs-37",
+          "actionPlan": "Theo dõi nhật ký cờ đỏ xem còn đi trễ không",
+          "studentName": "Phạm Tiến Đạt"
+        }
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "Soạn thư mời họp phụ huynh",
+      "dueDate": "11/09/2026",
+      "category": "Phụ huynh",
+      "priority": "Quan trọng",
+      "completed": true,
+      "assignedTo": "Trần Văn Tiến"
+    },
+    {
+      "id": "task-2",
+      "title": "Tổng hợp kết quả kiểm tra giữa kỳ",
+      "dueDate": "18/09/2026",
+      "category": "Học tập",
+      "priority": "Quan trọng",
+      "completed": true,
+      "assignedTo": "Trần Văn Tiến"
+    },
+    {
+      "id": "task-3",
+      "title": "Nhập điểm rèn luyện tháng 9",
+      "dueDate": "30/09/2026",
+      "category": "Rèn luyện",
+      "priority": "Thường",
+      "completed": false,
+      "assignedTo": "Trần Văn Tiến"
+    },
+    {
+      "id": "task-4",
+      "title": "Lập kế hoạch hoạt động ngoại khóa",
+      "dueDate": "05/10/2026",
+      "category": "Phong trào",
+      "priority": "Thường",
+      "completed": false,
+      "assignedTo": "BCH Chi đội & GVCN"
+    },
+    {
+      "id": "task-5",
+      "title": "Viết nhận xét học sinh học kỳ I",
+      "dueDate": "20/12/2026",
+      "category": "Học kỳ",
+      "priority": "Quan trọng",
+      "completed": true,
+      "assignedTo": "Trần Văn Tiến"
+    }
+  ],
+  "slogan": "Vì học sinh thân yêu - Vì tương lai tươi sáng",
+  "notices": [
+    {
+      "id": "not-1",
+      "title": "Họp phụ huynh đầu năm",
+      "iconType": "megaphone",
+      "timeInfo": "Thời gian: 10h30 ngày 11/09/2026 (Thứ 6)",
+      "description": "Họp phổ biến phương hướng năm học 2026-2027 và bầu ban đại diện cha mẹ học sinh lớp 9A2 tại phòng học số 302.",
+      "relativeTime": "2 giờ trước"
+    },
+    {
+      "id": "not-2",
+      "title": "Thông báo lịch kiểm tra giữa kỳ",
+      "iconType": "calendar",
+      "timeInfo": "Từ ngày 15/09 đến 18/09/2026",
+      "description": "Lịch thi khảo sát và kiểm tra giữa kỳ I các môn Toán, Văn, Ngoại ngữ và KHTN theo đề chung của nhà trường.",
+      "relativeTime": "5 giờ trước"
+    },
+    {
+      "id": "not-3",
+      "title": "Kế hoạch hoạt động trải nghiệm",
+      "iconType": "users",
+      "timeInfo": "Tham quan di tích lịch sử Đền Hùng",
+      "description": "Hoạt động giáo dục truyền thống lịch sử, địa chỉ đỏ và kỹ năng sống dành cho khối 9 dự kiến tổ chức vào đầu tháng 10.",
+      "relativeTime": "1 ngày trước"
+    },
+    {
+      "id": "not-4",
+      "title": "Nhắc nhở nộp bài tập",
+      "iconType": "document",
+      "timeInfo": "Hạn nộp: 12/09/2026",
+      "description": "Nhắc học sinh hoàn thành hồ sơ cá nhân, phiếu đăng ký câu lạc bộ kỹ năng và bài thu hoạch tuần đầu.",
+      "relativeTime": "1 ngày trước"
+    }
+  ],
+  "students": [
+    {
+      "id": "hs-import-1792829580329-0",
+      "gpa": 0,
+      "code": "HS9A2-01",
+      "notes": "Học sinh ngoan, chăm chỉ",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 4,
+      "address": "",
+      "fullName": "Phạm Gia Bảo",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Phạm Gia Bảo",
+      "conductRank": "",
+      "dateOfBirth": "25/09/2012",
+      "parentPhone": "0920489995",
+      "roleInClass": "Thành Viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580329-1",
+      "gpa": 0,
+      "code": "HS9A2-02",
+      "notes": "Học giỏi môn Tiếng Anh",
+      "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 3,
+      "address": "",
+      "fullName": "Trương Ngọc Kim Cương",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Trương Ngọc Kim Cương",
+      "conductRank": "",
+      "dateOfBirth": "10/12/2012",
+      "parentPhone": "0980705718",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580329-2",
+      "gpa": 0,
+      "code": "HS9A2-03",
+      "notes": "Năng động, chơi thể thao tốt",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 4,
+      "address": "",
+      "fullName": "Đoàn Nguyễn Thúy Duy",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Đoàn Nguyễn Thúy Duy",
+      "conductRank": "",
+      "dateOfBirth": "14/12/2012",
+      "parentPhone": "0980577190",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580329-3",
+      "gpa": 0,
+      "code": "HS9A2-04",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 3,
+      "address": "",
+      "fullName": "Trần Thúy Duy",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Trần Thúy Duy",
+      "conductRank": "",
+      "dateOfBirth": "28/02/2012",
+      "parentPhone": "0951665328",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580329-4",
+      "gpa": 0,
+      "code": "HS9A2-05",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 2,
+      "address": "",
+      "fullName": "Nguyễn Tây Đô",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Nguyễn Tây Đô",
+      "conductRank": "",
+      "dateOfBirth": "08/03/2012",
+      "parentPhone": "0991513905",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580329-5",
+      "gpa": 0,
+      "code": "HS9A2-06",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 3,
+      "address": "",
+      "fullName": "Võ Hoàng Gia",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Võ Hoàng Gia",
+      "conductRank": "",
+      "dateOfBirth": "29/08/2012",
+      "parentPhone": "0960509630",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580329-6",
+      "gpa": 0,
+      "code": "HS9A2-07",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 1,
+      "address": "",
+      "fullName": "Trần Nhật Hào",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Trần Nhật Hào",
+      "conductRank": "",
+      "dateOfBirth": "30/04/2012",
+      "parentPhone": "0910520026",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580329-7",
+      "gpa": 0,
+      "code": "HS9A2-08",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 2,
+      "address": "",
+      "fullName": "Trương Gia Hào",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Trương Gia Hào",
+      "conductRank": "",
+      "dateOfBirth": "16/01/2012",
+      "parentPhone": "0978304288",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580329-8",
+      "gpa": 0,
+      "code": "HS9A2-09",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 2,
+      "address": "",
+      "fullName": "Huỳnh Ngọc Hân",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Huỳnh Ngọc Hân",
+      "conductRank": "",
+      "dateOfBirth": "11/06/2012",
+      "parentPhone": "0978446403",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580329-9",
+      "gpa": 0,
+      "code": "HS9A2-10",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 4,
+      "address": "",
+      "fullName": "Mã Ngọc Bảo Hân",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Mã Ngọc Bảo Hân",
+      "conductRank": "",
+      "dateOfBirth": "05/09/2012",
+      "parentPhone": "0946961648",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580329-10",
+      "gpa": 0,
+      "code": "HS9A2-11",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 2,
+      "address": "",
+      "fullName": "Lê Thị Diệu Hiền",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Lê Thị Diệu Hiền",
+      "conductRank": "",
+      "dateOfBirth": "10/05/2012",
+      "parentPhone": "0987491202",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580329-11",
+      "gpa": 0,
+      "code": "HS9A2-12",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 4,
+      "address": "",
+      "fullName": "Ngô Tường Huy",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Ngô Tường Huy",
+      "conductRank": "",
+      "dateOfBirth": "19/08/2012",
+      "parentPhone": "0981191851",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580329-12",
+      "gpa": 0,
+      "code": "HS9A2-13",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 2,
+      "address": "",
+      "fullName": "Nguyễn Thị Ngọc Huyền",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Nguyễn Thị Ngọc Huyền",
+      "conductRank": "",
+      "dateOfBirth": "18/10/2012",
+      "parentPhone": "0958621291",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580329-13",
+      "gpa": 0,
+      "code": "HS9A2-14",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 2,
+      "address": "",
+      "fullName": "Châu Hoàng Khang",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Châu Hoàng Khang",
+      "conductRank": "",
+      "dateOfBirth": "20/08/2012",
+      "parentPhone": "0935348185",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-14",
+      "gpa": 0,
+      "code": "HS9A2-15",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 2,
+      "address": "",
+      "fullName": "Trịnh Phúc Khang",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Trịnh Phúc Khang",
+      "conductRank": "",
+      "dateOfBirth": "30/10/2012",
+      "parentPhone": "0967071414",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-15",
+      "gpa": 0,
+      "code": "HS9A2-16",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 3,
+      "address": "",
+      "fullName": "Châu Gia Khiêm",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Châu Gia Khiêm",
+      "conductRank": "",
+      "dateOfBirth": "10/11/2012",
+      "parentPhone": "0953257859",
+      "roleInClass": "Tổ trưởng",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-16",
+      "gpa": 0,
+      "code": "HS9A2-17",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 2,
+      "address": "",
+      "fullName": "Châu Thanh Long",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Châu Thanh Long",
+      "conductRank": "",
+      "dateOfBirth": "31/12/2012",
+      "parentPhone": "0925812659",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-17",
+      "gpa": 0,
+      "code": "HS9A2-18",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 2,
+      "address": "",
+      "fullName": "Phan Nhật Long",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Phan Nhật Long",
+      "conductRank": "",
+      "dateOfBirth": "05/04/2012",
+      "parentPhone": "0946770417",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-18",
+      "gpa": 0,
+      "code": "HS9A2-19",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 2,
+      "address": "",
+      "fullName": "Trần Hải Long",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Trần Hải Long",
+      "conductRank": "",
+      "dateOfBirth": "13/08/2012",
+      "parentPhone": "0986139140",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-19",
+      "gpa": 0,
+      "code": "HS9A2-20",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 4,
+      "address": "",
+      "fullName": "Trần Tấn Lộc",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Trần Tấn Lộc",
+      "conductRank": "",
+      "dateOfBirth": "11/09/2012",
+      "parentPhone": "0984998802",
+      "roleInClass": "Tổ trưởng",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-20",
+      "gpa": 0,
+      "code": "HS9A2-21",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 3,
+      "address": "",
+      "fullName": "Đỗ Bình Minh",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Đỗ Bình Minh",
+      "conductRank": "",
+      "dateOfBirth": "17/11/2012",
+      "parentPhone": "0932302427",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-21",
+      "gpa": 0,
+      "code": "HS9A2-22",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 2,
+      "address": "",
+      "fullName": "Lê Ánh Mơ",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Lê Ánh Mơ",
+      "conductRank": "",
+      "dateOfBirth": "26/06/2012",
+      "parentPhone": "0941307120",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-22",
+      "gpa": 0,
+      "code": "HS9A2-23",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 1,
+      "address": "",
+      "fullName": "Bùi Thị Kiều My",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Bùi Thị Kiều My",
+      "conductRank": "",
+      "dateOfBirth": "06/04/2012",
+      "parentPhone": "0952535478",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-23",
+      "gpa": 0,
+      "code": "HS9A2-24",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 2,
+      "address": "",
+      "fullName": "Lê Trung Nghĩa",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Lê Trung Nghĩa",
+      "conductRank": "",
+      "dateOfBirth": "18/08/2012",
+      "parentPhone": "0912570812",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-24",
+      "gpa": 0,
+      "code": "HS9A2-25",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 1,
+      "address": "",
+      "fullName": "Trần Huỳnh Nghiêm",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Trần Huỳnh Nghiêm",
+      "conductRank": "",
+      "dateOfBirth": "19/08/2010",
+      "parentPhone": "0974188845",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-25",
+      "gpa": 0,
+      "code": "HS9A2-26",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 1,
+      "address": "",
+      "fullName": "Nguyễn Thị Bảo Ngọc",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Nguyễn Thị Bảo Ngọc",
+      "conductRank": "",
+      "dateOfBirth": "03/10/2012",
+      "parentPhone": "0972722275",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-26",
+      "gpa": 0,
+      "code": "HS9A2-27",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 1,
+      "address": "",
+      "fullName": "Trần Như Ngọc",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Trần Như Ngọc",
+      "conductRank": "",
+      "dateOfBirth": "14/06/2012",
+      "parentPhone": "0999788765",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-27",
+      "gpa": 0,
+      "code": "HS9A2-28",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 3,
+      "address": "",
+      "fullName": "Huỳnh Bích Như",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Huỳnh Bích Như",
+      "conductRank": "",
+      "dateOfBirth": "07/08/2012",
+      "parentPhone": "0955922810",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-28",
+      "gpa": 0,
+      "code": "HS9A2-29",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 2,
+      "address": "",
+      "fullName": "La Ngọc Quyễn",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em La Ngọc Quyễn",
+      "conductRank": "",
+      "dateOfBirth": "11/01/2012",
+      "parentPhone": "0995820712",
+      "roleInClass": "Lớp trưởng",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-29",
+      "gpa": 0,
+      "code": "HS9A2-30",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 2,
+      "address": "",
+      "fullName": "Trịnh Tấn Tài",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Trịnh Tấn Tài",
+      "conductRank": "",
+      "dateOfBirth": "11/09/2012",
+      "parentPhone": "0921339496",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-30",
+      "gpa": 0,
+      "code": "HS9A2-31",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 4,
+      "address": "",
+      "fullName": "Mã Chí Thiện",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Mã Chí Thiện",
+      "conductRank": "",
+      "dateOfBirth": "02/09/2012",
+      "parentPhone": "0955075608",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-31",
+      "gpa": 0,
+      "code": "HS9A2-32",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 1,
+      "address": "",
+      "fullName": "Nguyễn Thị Kim Thơ",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Nguyễn Thị Kim Thơ",
+      "conductRank": "",
+      "dateOfBirth": "01/05/2012",
+      "parentPhone": "0972171212",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-32",
+      "gpa": 0,
+      "code": "HS9A2-33",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 1,
+      "address": "",
+      "fullName": "Lê Huyền Thư",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Lê Huyền Thư",
+      "conductRank": "",
+      "dateOfBirth": "20/10/2012",
+      "parentPhone": "0990491238",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-33",
+      "gpa": 0,
+      "code": "HS9A2-34",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 4,
+      "address": "",
+      "fullName": "Nguyễn Anh Thư",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Nguyễn Anh Thư",
+      "conductRank": "",
+      "dateOfBirth": "17/12/2012",
+      "parentPhone": "0934822924",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-34",
+      "gpa": 0,
+      "code": "HS9A2-35",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 3,
+      "address": "",
+      "fullName": "Trần Nguyễn Nhã Thư",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Trần Nguyễn Nhã Thư",
+      "conductRank": "",
+      "dateOfBirth": "15/12/2012",
+      "parentPhone": "0978328751",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-35",
+      "gpa": 0,
+      "code": "HS9A2-36",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 2,
+      "address": "",
+      "fullName": "Trình Hồng Thy",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Trình Hồng Thy",
+      "conductRank": "",
+      "dateOfBirth": "09/06/2012",
+      "parentPhone": "0978910106",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-36",
+      "gpa": 0,
+      "code": "HS9A2-37",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 1,
+      "address": "",
+      "fullName": "Phan Văn Tính",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Phan Văn Tính",
+      "conductRank": "",
+      "dateOfBirth": "28/10/2012",
+      "parentPhone": "0933093856",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-37",
+      "gpa": 0,
+      "code": "HS9A2-38",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 4,
+      "address": "",
+      "fullName": "Đoàn Minh Trạng",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Đoàn Minh Trạng",
+      "conductRank": "",
+      "dateOfBirth": "17/01/2012",
+      "parentPhone": "0910510106",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-38",
+      "gpa": 0,
+      "code": "HS9A2-39",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nam",
+      "teamId": 3,
+      "address": "",
+      "fullName": "Đặng Vầng Trăng",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Đặng Vầng Trăng",
+      "conductRank": "",
+      "dateOfBirth": "27/10/2012",
+      "parentPhone": "0940292408",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-39",
+      "gpa": 0,
+      "code": "HS9A2-40",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 1,
+      "address": "",
+      "fullName": "Trần Ngọc Bảo Trân",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Trần Ngọc Bảo Trân",
+      "conductRank": "",
+      "dateOfBirth": "06/09/2012",
+      "parentPhone": "0996959847",
+      "roleInClass": "Tổ trưởng",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-40",
+      "gpa": 0,
+      "code": "HS9A2-41",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 1,
+      "address": "",
+      "fullName": "Nguyễn Thị Nhật Vi",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Nguyễn Thị Nhật Vi",
+      "conductRank": "",
+      "dateOfBirth": "19/11/2009",
+      "parentPhone": "0973832975",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-41",
+      "gpa": 0,
+      "code": "HS9A2-42",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 3,
+      "address": "",
+      "fullName": "Trương Ngọc Thảo Vy",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Trương Ngọc Thảo Vy",
+      "conductRank": "",
+      "dateOfBirth": "18/10/2012",
+      "parentPhone": "0957039005",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-42",
+      "gpa": 0,
+      "code": "HS9A2-43",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 3,
+      "address": "",
+      "fullName": "Trần Bông Y",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Trần Bông Y",
+      "conductRank": "",
+      "dateOfBirth": "11/03/2012",
+      "parentPhone": "0941064542",
+      "roleInClass": "Thành viên",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    },
+    {
+      "id": "hs-import-1792829580331-43",
+      "gpa": 0,
+      "code": "HS9A2-44",
+      "notes": "Nhập từ file Excel",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "gender": "Nữ",
+      "teamId": 2,
+      "address": "",
+      "fullName": "Phạm Như Ý",
+      "subjects": {},
+      "parentJob": "",
+      "semester1": {
+        "gpa": 0,
+        "notes": "Chưa có điểm Học kỳ 1",
+        "subjects": {},
+        "awardTitle": "",
+        "conductRank": "",
+        "academicRank": "",
+        "conductEvaluated": false,
+        "evaluatedSubjects": {}
+      },
+      "awardTitle": "",
+      "parentName": "Phụ huynh em Phạm Như Ý",
+      "conductRank": "",
+      "dateOfBirth": "19/06/2012",
+      "parentPhone": "0988310771",
+      "roleInClass": "Tổ trưởng",
+      "academicRank": "",
+      "conductEvaluated": false,
+      "evaluatedSubjects": {}
+    }
+  ],
+  "className": "Lớp 9A2",
+  "documents": [
+    {
+      "id": "doc-1",
+      "date": "10/09/2026",
+      "title": "Thư mời họp Ban đại diện Cha mẹ học sinh đầu năm học 2026-2027",
+      "content": "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc\n-----------------\nTRƯỜNG TIỂU HỌC VÀ THCS VÕ THỊ SÁU\nLỚP CHỦ NHIỆM 9A2\n\nGIẤY MỜI HỌP PHỤ HUYNH ĐẦU NĂM HỌC 2026 - 2027\n\nKính gửi: Ông/Bà Phụ huynh học sinh lớp 9A2\n\nCăn cứ vào kế hoạch năm học 2026 - 2027 của Trường Tiểu học và THCS Võ Thị Sáu;\nĐể tăng cường sự phối hợp chặt chẽ giữa Gia đình và Nhà trường trong công tác giáo dục toàn diện học sinh lớp 9 - năm học bản lề chuyển cấp vào THPT;\n\nGiáo viên chủ nhiệm lớp 9A2 trân trọng kính mời:\n- Ông/Bà: Phụ huynh của em: [Tên học sinh]\n- Đến tham dự buổi: HỌP PHỤ HUYNH HỌC SINH ĐẦU NĂM HỌC\n- Thời gian: 10 giờ 30 phút, ngày 11 tháng 09 năm 2026 (Thứ Sáu)\n- Địa điểm: Phòng học 302, Tầng 3, Trường Tiểu học và THCS Võ Thị Sáu.\n\nNỘI DUNG BUỔI HỌP:\n1. Báo cáo tình hình chung của nhà trường và phương hướng nhiệm vụ năm học 2026 - 2027.\n2. Thông qua đặc điểm tình hình lớp 9A2 (sĩ số, thuận lợi, khó khăn, mục tiêu thi vào lớp 10 THPT).\n3. Thảo luận các biện pháp phối hợp rèn luyện nề nếp, nâng cao chất lượng học tập.\n4. Bầu Ban đại diện Cha mẹ học sinh lớp 9A2 năm học 2026 - 2027.\n\nSự hiện diện đầy đủ, đúng giờ của Quý Phụ huynh là nguồn động viên to lớn cho thầy trò lớp 9A2!\n\nHà Nội, ngày 10 tháng 09 năm 2026\nGIÁO VIÊN CHỦ NHIỆM\n\nTrần Văn Tiến",
+      "category": "Thư mời",
+      "recipient": "Kính gửi Quý Cha Mẹ Học Sinh Lớp 9A2"
+    },
+    {
+      "id": "doc-2",
+      "date": "12/09/2026",
+      "title": "Biên bản sinh hoạt lớp và đánh giá thi đua tuần 2",
+      "content": "BIÊN BẢN TIẾT SINH HOẠT LỚP 9A2 (TUẦN 2)\nThời gian: 10h15 ngày 12/09/2026.\nChủ tọa: Thầy Trần Văn Tiến (GVCN).\nThư ký: Nguyễn Minh Anh (Lớp trưởng).\nSĩ số: 38/38 có mặt.\n\n1. Báo cáo của các Tổ trưởng:\n- Tổ 1: Đạt 98 điểm, xếp hạng 1. Nề nếp rất tốt, không vi phạm.\n- Tổ 2: Đạt 96 điểm, xếp hạng 2. Có tiến bộ về điểm học tập.\n- Tổ 3: Đạt 95 điểm, xếp hạng 3. Còn 1 trường hợp quên khăn quàng đỏ.\n- Tổ 4: Đạt 94 điểm, xếp hạng 4. Vệ sinh trực nhật hoàn thành tốt.\n\n2. Ý kiến chỉ đạo của GVCN:\n- Biểu dương 5 học sinh tiêu biểu trong tuần.\n- Nhắc nhở tập trung ôn thi giữa kỳ I.\n- Thống nhất quy ước kỷ luật tự giác.",
+      "category": "Biên bản",
+      "recipient": "Ban Giám Hiệu & Tổng Phụ Trách Đội"
+    }
+  ],
+  "todayDate": "2026-10-24",
+  "schoolName": "TRƯỜNG TIỂU HỌC VÀ THCS VÕ THỊ SÁU",
+  "currentUser": {
+    "id": "user-guest",
+    "name": "Khách xem",
+    "role": "guest",
+    "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+    "category": "Khác",
+    "roleTitle": "Chế độ chỉ xem"
+  },
+  "teacherName": "Trần Văn Tiến",
+  "teacherRole": "Giáo viên chủ nhiệm",
+  "academicYear": "Năm học 2026 - 2027",
+  "userAccounts": [
+    {
+      "id": "user-gvcn",
+      "name": "Trần Văn Tiến",
+      "role": "teacher",
+      "roleTitle": "Giáo viên chủ nhiệm",
+      "category": "GVCN",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "phone": "0988776655",
+      "password": "0919973508"
+    },
+    {
+      "id": "user-lt",
+      "name": "La Ngọc Quyễn",
+      "role": "class_monitor",
+      "roleTitle": "Lớp trưởng",
+      "category": "Ban cán sự",
+      "teamId": 2,
+      "studentId": "hs-import-1792829580331-28",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+      "phone": "0995820712",
+      "password": "123456"
+    },
+    {
+      "id": "user-tt1",
+      "name": "Trần Ngọc Bảo Trân",
+      "role": "team_leader_1",
+      "roleTitle": "Tổ trưởng Tổ 1",
+      "category": "Tổ trưởng",
+      "teamId": 1,
+      "studentId": "hs-import-1792829580331-39",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "phone": "0996959847",
+      "password": "123456"
+    },
+    {
+      "id": "user-tt2",
+      "name": "Phạm Như Ý",
+      "role": "team_leader_2",
+      "roleTitle": "Tổ trưởng Tổ 2",
+      "category": "Tổ trưởng",
+      "teamId": 2,
+      "studentId": "hs-import-1792829580331-43",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "phone": "0988310771",
+      "password": "123456"
+    },
+    {
+      "id": "user-tt3",
+      "name": "Châu Gia Khiêm",
+      "role": "team_leader_3",
+      "roleTitle": "Tổ trưởng Tổ 3",
+      "category": "Tổ trưởng",
+      "teamId": 3,
+      "studentId": "hs-import-1792829580331-15",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "phone": "0953257859",
+      "password": "123456"
+    },
+    {
+      "id": "user-tt4",
+      "name": "Trần Tấn Lộc",
+      "role": "team_leader_4",
+      "roleTitle": "Tổ trưởng Tổ 4",
+      "category": "Tổ trưởng",
+      "teamId": 4,
+      "studentId": "hs-import-1792829580331-19",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "phone": "0984998802",
+      "password": "123456"
+    }
+  ],
+  "parentContacts": [
+    {
+      "id": "pc-1",
+      "date": "10/09/2026",
+      "phone": "0917338822",
+      "topic": "Kế hoạch phụ đạo môn Toán và Tiếng Anh",
+      "status": "Đã trao đổi",
+      "content": "Trao đổi về kết quả khảo sát đầu năm của em Khoa. Phụ huynh cam kết giám sát giờ tự học ở nhà từ 19h30 - 21h30 hằng ngày.",
+      "studentId": "hs-38",
+      "parentName": "Nguyễn Đăng Hưng",
+      "contactType": "Gặp trực tiếp",
+      "studentName": "Nguyễn Đăng Khoa",
+      "followUpNeeded": true
+    },
+    {
+      "id": "pc-2",
+      "date": "11/09/2026",
+      "phone": "0914665522",
+      "topic": "Nhắc nhở học sinh đi học đúng giờ",
+      "status": "Đã trao đổi",
+      "content": "Em Trung đi trễ 15 phút do hỏng xe. Phụ huynh tiếp thu và đã sửa xe để kịp giờ học các ngày tới.",
+      "studentId": "hs-32",
+      "parentName": "Nguyễn Trung Kiên",
+      "contactType": "Gọi điện",
+      "studentName": "Nguyễn Thành Trung",
+      "followUpNeeded": false
+    }
+  ],
+  "rolePermissions": {
+    "teacher": {
+      "canUseAI": true,
+      "canToggleTasks": true,
+      "emulationScope": "all",
+      "attendanceScope": "all",
+      "canExportReports": true,
+      "canManageParents": true,
+      "canManageStudents": true,
+      "canTakeAttendance": true,
+      "canConfigureSystem": true,
+      "canManageAcademics": true,
+      "canProposePlanTask": true,
+      "canRecordEmulation": true,
+      "canCreateOfficialPlan": true
+    },
+    "class_monitor": {
+      "canUseAI": true,
+      "canToggleTasks": true,
+      "emulationScope": "all",
+      "attendanceScope": "all",
+      "canExportReports": true,
+      "canManageParents": false,
+      "canManageStudents": false,
+      "canTakeAttendance": true,
+      "canConfigureSystem": false,
+      "canManageAcademics": false,
+      "canProposePlanTask": true,
+      "canRecordEmulation": true,
+      "canCreateOfficialPlan": false
+    },
+    "vice_monitor_academic": {
+      "canUseAI": false,
+      "canToggleTasks": true,
+      "emulationScope": "all",
+      "attendanceScope": "none",
+      "canExportReports": false,
+      "canManageParents": false,
+      "canManageStudents": false,
+      "canTakeAttendance": false,
+      "canConfigureSystem": false,
+      "canManageAcademics": false,
+      "canProposePlanTask": true,
+      "canRecordEmulation": true,
+      "canCreateOfficialPlan": false
+    },
+    "vice_monitor_discipline": {
+      "canUseAI": false,
+      "canToggleTasks": true,
+      "emulationScope": "all",
+      "attendanceScope": "all",
+      "canExportReports": false,
+      "canManageParents": false,
+      "canManageStudents": false,
+      "canTakeAttendance": true,
+      "canConfigureSystem": false,
+      "canManageAcademics": false,
+      "canProposePlanTask": true,
+      "canRecordEmulation": true,
+      "canCreateOfficialPlan": false
+    },
+    "team_leader_1": {
+      "canUseAI": false,
+      "canToggleTasks": true,
+      "emulationScope": "own_team",
+      "attendanceScope": "own_team",
+      "canExportReports": false,
+      "canManageParents": false,
+      "canManageStudents": false,
+      "canTakeAttendance": true,
+      "canConfigureSystem": false,
+      "canManageAcademics": false,
+      "canProposePlanTask": true,
+      "canRecordEmulation": true,
+      "canCreateOfficialPlan": false
+    },
+    "team_leader_2": {
+      "canUseAI": false,
+      "canToggleTasks": true,
+      "emulationScope": "own_team",
+      "attendanceScope": "own_team",
+      "canExportReports": false,
+      "canManageParents": false,
+      "canManageStudents": false,
+      "canTakeAttendance": true,
+      "canConfigureSystem": false,
+      "canManageAcademics": false,
+      "canProposePlanTask": true,
+      "canRecordEmulation": true,
+      "canCreateOfficialPlan": false
+    },
+    "team_leader_3": {
+      "canUseAI": false,
+      "canToggleTasks": true,
+      "emulationScope": "own_team",
+      "attendanceScope": "own_team",
+      "canExportReports": false,
+      "canManageParents": false,
+      "canManageStudents": false,
+      "canTakeAttendance": true,
+      "canConfigureSystem": false,
+      "canManageAcademics": false,
+      "canProposePlanTask": true,
+      "canRecordEmulation": true,
+      "canCreateOfficialPlan": false
+    },
+    "team_leader_4": {
+      "canUseAI": false,
+      "canToggleTasks": true,
+      "emulationScope": "own_team",
+      "attendanceScope": "own_team",
+      "canExportReports": false,
+      "canManageParents": false,
+      "canManageStudents": false,
+      "canTakeAttendance": true,
+      "canConfigureSystem": false,
+      "canManageAcademics": false,
+      "canProposePlanTask": true,
+      "canRecordEmulation": true,
+      "canCreateOfficialPlan": false
+    },
+    "guest": {
+      "canUseAI": false,
+      "canToggleTasks": false,
+      "emulationScope": "none",
+      "attendanceScope": "none",
+      "canExportReports": false,
+      "canManageParents": false,
+      "canManageStudents": false,
+      "canTakeAttendance": false,
+      "canConfigureSystem": false,
+      "canManageAcademics": false,
+      "canProposePlanTask": false,
+      "canRecordEmulation": false,
+      "canCreateOfficialPlan": false
+    }
+  },
+  "emulationRecords": [
+    {
+      "id": "emu-1",
+      "date": "2026-09-08",
+      "note": "Được cô giáo bộ môn Toán khen ngợi",
+      "type": "plus",
+      "week": 2,
+      "points": 5,
+      "teamId": 1,
+      "criteria": "Phát biểu xây dựng bài tích cực",
+      "recordedBy": "Cán sự môn",
+      "studentName": "Nguyễn Minh Anh"
+    },
+    {
+      "id": "emu-2",
+      "date": "2026-09-09",
+      "note": "Đạt điểm 9 bài kiểm tra 15 phút KHTN",
+      "type": "plus",
+      "week": 2,
+      "points": 5,
+      "teamId": 2,
+      "criteria": "Tiến bộ rõ rệt trong học tập",
+      "recordedBy": "Tổ trưởng Tổ 2",
+      "studentName": "Phạm Tuấn Nghĩa"
+    },
+    {
+      "id": "emu-3",
+      "date": "2026-09-10",
+      "note": "Nhắc nhở nề nếp đầu giờ",
+      "type": "minus",
+      "week": 2,
+      "points": -2,
+      "teamId": 3,
+      "criteria": "Quên khăn quàng đỏ",
+      "recordedBy": "Cờ đỏ",
+      "studentName": "Tạ Quang Đạt"
+    },
+    {
+      "id": "emu-4",
+      "date": "2026-09-11",
+      "note": "Đoàn kiểm tra chấm 10/10 điểm vệ sinh lớp",
+      "type": "plus",
+      "week": 2,
+      "points": 4,
+      "teamId": 4,
+      "criteria": "Vệ sinh trực nhật sạch sẽ",
+      "recordedBy": "Ban nề nếp",
+      "studentName": "Bùi Thanh Tùng"
+    },
+    {
+      "id": "emu-w1-1",
+      "date": "2026-09-03",
+      "note": "Tổ 1 đi học đầy đủ đúng giờ tuần 1",
+      "type": "plus",
+      "week": 1,
+      "points": 3,
+      "teamId": 1,
+      "criteria": "Chuyên cần đầy đủ, nề nếp tốt",
+      "recordedBy": "GVCN",
+      "studentName": "Vũ Đức Duy"
+    },
+    {
+      "id": "emu-w1-2",
+      "date": "2026-09-04",
+      "note": "Hoàn thành trực nhật đầu năm",
+      "type": "plus",
+      "week": 1,
+      "points": 3,
+      "teamId": 2,
+      "criteria": "Vệ sinh trực nhật sạch sẽ",
+      "recordedBy": "Ban nề nếp",
+      "studentName": "Lê Thị Bảo Trâm"
+    }
+  ],
+  "attendanceHistory": {
+    "2026-09-08": {
+      "date": "2026-09-08",
+      "records": {},
+      "summary": {
+        "late": 0,
+        "total": 38,
+        "excused": 1,
+        "present": 37,
+        "unexcused": 0
+      }
+    },
+    "2026-09-09": {
+      "date": "2026-09-09",
+      "records": {},
+      "summary": {
+        "late": 1,
+        "total": 38,
+        "excused": 1,
+        "present": 36,
+        "unexcused": 0
+      }
+    },
+    "2026-09-10": {
+      "date": "2026-09-10",
+      "records": {},
+      "summary": {
+        "late": 0,
+        "total": 38,
+        "excused": 0,
+        "present": 38,
+        "unexcused": 0
+      }
+    },
+    "2026-09-11": {
+      "date": "2026-09-11",
+      "records": {
+        "hs-01": {
+          "status": "present"
+        },
+        "hs-02": {
+          "status": "present"
+        },
+        "hs-03": {
+          "status": "present"
+        },
+        "hs-04": {
+          "status": "present"
+        },
+        "hs-05": {
+          "status": "present"
+        },
+        "hs-06": {
+          "status": "present"
+        },
+        "hs-07": {
+          "status": "present"
+        },
+        "hs-08": {
+          "status": "present"
+        },
+        "hs-09": {
+          "status": "present"
+        },
+        "hs-10": {
+          "reason": "Phụ huynh gọi điện xin phép do sốt nhẹ",
+          "status": "excused"
+        },
+        "hs-11": {
+          "status": "present"
+        },
+        "hs-12": {
+          "status": "present"
+        },
+        "hs-13": {
+          "status": "present"
+        },
+        "hs-14": {
+          "status": "present"
+        },
+        "hs-15": {
+          "status": "present"
+        },
+        "hs-16": {
+          "status": "present"
+        },
+        "hs-17": {
+          "status": "present"
+        },
+        "hs-18": {
+          "status": "present"
+        },
+        "hs-19": {
+          "status": "present"
+        },
+        "hs-20": {
+          "reason": "Gia đình có việc hiếu ở quê",
+          "status": "excused"
+        },
+        "hs-21": {
+          "status": "present"
+        },
+        "hs-22": {
+          "status": "present"
+        },
+        "hs-23": {
+          "status": "present"
+        },
+        "hs-24": {
+          "status": "present"
+        },
+        "hs-25": {
+          "status": "present"
+        },
+        "hs-26": {
+          "status": "present"
+        },
+        "hs-27": {
+          "status": "present"
+        },
+        "hs-28": {
+          "status": "present"
+        },
+        "hs-29": {
+          "status": "present"
+        },
+        "hs-30": {
+          "status": "present"
+        },
+        "hs-31": {
+          "status": "present"
+        },
+        "hs-32": {
+          "reason": "Hỏng xe đạp điện",
+          "status": "late",
+          "timeArrived": "07:45"
+        },
+        "hs-33": {
+          "status": "present"
+        },
+        "hs-34": {
+          "status": "present"
+        },
+        "hs-35": {
+          "status": "present"
+        },
+        "hs-36": {
+          "status": "present"
+        },
+        "hs-37": {
+          "status": "present"
+        },
+        "hs-38": {
+          "reason": "Chưa liên lạc được phụ huynh buổi sáng",
+          "status": "unexcused"
+        }
+      },
+      "summary": {
+        "late": 1,
+        "total": 38,
+        "excused": 2,
+        "present": 34,
+        "unexcused": 1
+      }
+    },
+    "2026-09-12": {
+      "date": "2026-09-12",
+      "records": {},
+      "summary": {
+        "late": 0,
+        "total": 38,
+        "excused": 2,
+        "present": 35,
+        "unexcused": 1
+      }
+    }
+  },
+  "currentEmulationWeek": 7,
+  "weeklyExemplaryStudents": {
+    "7": {
+      "items": [
+        {
+          "studentId": "hs-01",
+          "badgeTitle": "Cán sự xuất sắc",
+          "commendationNote": "Ban cán sự lớp, gương mẫu"
+        },
+        {
+          "studentId": "hs-02",
+          "badgeTitle": "Hoa điểm tốt",
+          "commendationNote": "Phụ trách đôn đốc học tập"
+        },
+        {
+          "studentId": "hs-03",
+          "badgeTitle": "Tích cực nề nếp",
+          "commendationNote": "Tổ trưởng nề nếp, tích cực"
+        },
+        {
+          "studentId": "hs-04",
+          "badgeTitle": "Gương mẫu",
+          "commendationNote": "Chuyên cần đầy đủ, tích cực xây dựng bài"
+        },
+        {
+          "studentId": "hs-05",
+          "badgeTitle": "Tiến bộ vượt bậc",
+          "commendationNote": "Theo dõi chuyên cần và kỷ luật"
+        }
+      ],
+      "updatedAt": "2026-10-24T07:39:36.829Z",
+      "weekNumber": 7,
+      "teacherComment": "Tuyên dương các học sinh tiêu biểu Tuần 7 có ý thức rèn luyện tốt, tích cực học tập và gương mẫu trong hoạt động tập thể lớp."
+    }
+  }
+}

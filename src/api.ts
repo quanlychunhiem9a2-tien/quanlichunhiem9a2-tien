@@ -3,6 +3,7 @@ import { defaultAppState, guestUserAccount } from './mockData';
 import { normalizeStudentTT22 } from './utils/tt22Evaluation';
 import { getCurrentSchoolWeekInfo, getSchoolWeekMeta } from './utils/dateWeekUtils';
 import { fetchFromSupabase, syncToSupabase } from './lib/supabase';
+import { syncUserAccountsWithStudents } from './utils/cadreSyncUtils';
 
 const STORAGE_KEY = 'gvcn_ai_app_state_v2';
 const SESSION_USER_KEY = 'gvcn_ai_session_user_v2';
@@ -32,6 +33,7 @@ function getSessionUser() {
 function hydrateAppState(rawData: Partial<AppState>, activeUser: any, latestWeek: { currentWeek: number; todayISO: string }): AppState {
   const rawStudents = Array.isArray(rawData.students) ? rawData.students : defaultAppState.students;
   const rawPlans = Array.isArray(rawData.plans) ? rawData.plans : defaultAppState.plans;
+  const normalizedStudents = rawStudents.map(normalizeStudentTT22);
   const resolvedWeek =
     !rawData.currentEmulationWeek ||
     rawData.currentEmulationWeek === 2 ||
@@ -43,16 +45,25 @@ function hydrateAppState(rawData: Partial<AppState>, activeUser: any, latestWeek
       ? latestWeek.todayISO
       : rawData.todayDate;
 
+  const syncedCadres = syncUserAccountsWithStudents({
+    students: normalizedStudents,
+    userAccounts: rawData.userAccounts || defaultAppState.userAccounts,
+    rolePermissions: rawData.rolePermissions || defaultAppState.rolePermissions,
+    teacherName: rawData.teacherName || defaultAppState.teacherName,
+    teacherRole: rawData.teacherRole || defaultAppState.teacherRole,
+    currentUser: activeUser,
+  });
+
   return {
     ...defaultAppState,
     ...rawData,
     todayDate: resolvedToday,
     currentEmulationWeek: resolvedWeek,
     plans: rawPlans.map(normalizePlanWeekDates),
-    students: rawStudents.map(normalizeStudentTT22),
-    currentUser: activeUser,
-    userAccounts: rawData.userAccounts || defaultAppState.userAccounts,
-    rolePermissions: rawData.rolePermissions || defaultAppState.rolePermissions,
+    students: normalizedStudents,
+    currentUser: syncedCadres.currentUser,
+    userAccounts: syncedCadres.userAccounts,
+    rolePermissions: syncedCadres.rolePermissions,
   };
 }
 

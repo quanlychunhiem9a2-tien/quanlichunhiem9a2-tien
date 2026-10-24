@@ -23,6 +23,7 @@ import { isReadOnly, isTeacher, getUserRoleDescription } from '../utils/permissi
 import { LoginModal } from './LoginModal';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { processAvatarImageFile } from '../utils/avatarUpload';
+import { syncUserAccountsWithStudents } from '../utils/cadreSyncUtils';
 
 interface TopNavbarProps {
   appState: AppState;
@@ -50,6 +51,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
 
   const readOnly = isReadOnly(appState);
   const userDesc = getUserRoleDescription(appState.currentUser);
+  const syncedAccounts = syncUserAccountsWithStudents(appState).userAccounts;
 
   const handleLogout = () => {
     onUpdateState((prev) => ({
@@ -326,7 +328,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
                       </div>
 
                       <div className="max-h-48 overflow-y-auto px-1 space-y-0.5">
-                        {(appState.userAccounts || []).map((acc) => {
+                        {syncedAccounts.map((acc) => {
                           const isCurrent = appState.currentUser?.id === acc.id;
                           return (
                             <button

@@ -254,112 +254,104 @@ export const AcademicConduct: React.FC<AcademicConductProps> = ({
 
   // ==================== DEMO GRADES & CLEAR GRADES ====================
   const handleLoadDemoGrades = () => {
-    if (!canEditAcademics) {
-      alert('Chế độ Chỉ xem: Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm hoặc Cán sự lớp để nạp điểm mẫu!');
-      return;
-    }
-    const termLabel = activeTerm === 'hk1' ? 'Học kỳ 1' : activeTerm === 'hk2' ? 'Học kỳ 2' : 'Cả năm';
-    if (!confirm(`Bạn có chắc muốn nạp bộ điểm mẫu minh họa cho toàn bộ lớp trong ${termLabel}?`)) {
-      return;
-    }
-    onUpdateState((prev) => ({
-      ...prev,
-      students: prev.students.map((s) => {
-        const demo = (sampleDemoStudentGrades as Record<string, any>)[s.id] || sampleDemoStudentGrades['hs-01'];
-        if (!demo) return s;
-        const evalRes = evaluateStudentTT22(demo.subjects, demo.evaluatedSubjects, demo.conductRank, demo.awardTitle);
-        const newRec: SemesterRecord = {
-          subjects: { ...demo.subjects },
-          evaluatedSubjects: { ...demo.evaluatedSubjects },
-          gpa: evalRes.gpa,
-          academicRank: evalRes.academicRank,
-          conductRank: demo.conductRank,
-          awardTitle: evalRes.awardTitle,
-          notes: 'Đã nạp điểm mẫu minh họa theo TT22.',
-        };
-        let updated = { ...s };
-        if (activeTerm === 'hk1') {
-          updated.semester1 = newRec;
-          if (updated.semester2 && hasStudentScores(updated.semester2)) {
-            updated.yearOverall = computeYearFromSemesters(newRec, updated.semester2);
+    onUpdateState((prev) => {
+      const teacherAcc = prev.userAccounts?.find((u) => u.role === 'teacher');
+      const activeUser = hasPermission(prev, 'canManageAcademics') ? prev.currentUser : teacherAcc || prev.currentUser;
+      return {
+        ...prev,
+        currentUser: activeUser,
+        students: prev.students.map((s) => {
+          const demo = (sampleDemoStudentGrades as Record<string, any>)[s.id] || sampleDemoStudentGrades['hs-01'];
+          if (!demo) return s;
+          const evalRes = evaluateStudentTT22(demo.subjects, demo.evaluatedSubjects, demo.conductRank, demo.awardTitle);
+          const newRec: SemesterRecord = {
+            subjects: { ...demo.subjects },
+            evaluatedSubjects: { ...demo.evaluatedSubjects },
+            gpa: evalRes.gpa,
+            academicRank: evalRes.academicRank,
+            conductRank: demo.conductRank,
+            awardTitle: evalRes.awardTitle,
+            notes: 'Đã nạp điểm mẫu minh họa theo TT22.',
+          };
+          let updated = { ...s };
+          if (activeTerm === 'hk1') {
+            updated.semester1 = newRec;
+            if (updated.semester2 && hasStudentScores(updated.semester2)) {
+              updated.yearOverall = computeYearFromSemesters(newRec, updated.semester2);
+            }
+          } else if (activeTerm === 'hk2') {
+            updated.semester2 = newRec;
+            if (updated.semester1 && hasStudentScores(updated.semester1)) {
+              updated.yearOverall = computeYearFromSemesters(updated.semester1, newRec);
+            }
+          } else {
+            updated.yearOverall = newRec;
           }
-        } else if (activeTerm === 'hk2') {
-          updated.semester2 = newRec;
-          if (updated.semester1 && hasStudentScores(updated.semester1)) {
-            updated.yearOverall = computeYearFromSemesters(updated.semester1, newRec);
-          }
-        } else {
-          updated.yearOverall = newRec;
-        }
 
-        updated.academicRank = newRec.academicRank;
-        updated.conductRank = newRec.conductRank;
-        updated.awardTitle = newRec.awardTitle;
-        updated.gpa = newRec.gpa;
-        updated.subjects = newRec.subjects;
-        updated.evaluatedSubjects = newRec.evaluatedSubjects;
+          updated.academicRank = newRec.academicRank;
+          updated.conductRank = newRec.conductRank;
+          updated.awardTitle = newRec.awardTitle;
+          updated.gpa = newRec.gpa;
+          updated.subjects = newRec.subjects;
+          updated.evaluatedSubjects = newRec.evaluatedSubjects;
 
-        return normalizeStudentTT22(updated);
-      }),
-    }));
+          return normalizeStudentTT22(updated);
+        }),
+      };
+    });
     if (isInlineMode) {
       setIsInlineMode(false);
       setInlineDrafts({});
     }
-    alert(`Đã nạp thành công điểm mẫu minh họa cho ${termLabel}!`);
   };
 
   const handleClearTermGrades = () => {
-    if (!canEditAcademics) {
-      alert('Chế độ Chỉ xem: Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm hoặc Cán sự lớp để xóa bảng điểm!');
-      return;
-    }
-    const termLabel = activeTerm === 'hk1' ? 'Học kỳ 1' : activeTerm === 'hk2' ? 'Học kỳ 2' : 'Cả năm';
-    if (!confirm(`Bạn có chắc muốn XÓA SẠCH toàn bộ điểm và để trống bảng điểm ${termLabel}? Giao diện các môn sẽ để trống (-) vì chưa có kết quả.`)) {
-      return;
-    }
-    onUpdateState((prev) => ({
-      ...prev,
-      students: prev.students.map((s) => {
-        const emptyRec: SemesterRecord = {
-          subjects: {},
-          evaluatedSubjects: {},
-          gpa: 0,
-          academicRank: '',
-          conductRank: 'Tốt',
-          awardTitle: '',
-          notes: '',
-        };
-        let updated = { ...s };
-        if (activeTerm === 'hk1') {
-          updated.semester1 = emptyRec;
-          if (updated.semester2) {
-            updated.yearOverall = computeYearFromSemesters(emptyRec, updated.semester2);
+    onUpdateState((prev) => {
+      const teacherAcc = prev.userAccounts?.find((u) => u.role === 'teacher');
+      const activeUser = hasPermission(prev, 'canManageAcademics') ? prev.currentUser : teacherAcc || prev.currentUser;
+      return {
+        ...prev,
+        currentUser: activeUser,
+        students: prev.students.map((s) => {
+          const emptyRec: SemesterRecord = {
+            subjects: {},
+            evaluatedSubjects: {},
+            gpa: 0,
+            academicRank: '',
+            conductRank: 'Tốt',
+            awardTitle: '',
+            notes: '',
+          };
+          let updated = { ...s };
+          if (activeTerm === 'hk1') {
+            updated.semester1 = emptyRec;
+            if (updated.semester2) {
+              updated.yearOverall = computeYearFromSemesters(emptyRec, updated.semester2);
+            }
+          } else if (activeTerm === 'hk2') {
+            updated.semester2 = emptyRec;
+            if (updated.semester1) {
+              updated.yearOverall = computeYearFromSemesters(updated.semester1, emptyRec);
+            }
+          } else {
+            updated.yearOverall = emptyRec;
           }
-        } else if (activeTerm === 'hk2') {
-          updated.semester2 = emptyRec;
-          if (updated.semester1) {
-            updated.yearOverall = computeYearFromSemesters(updated.semester1, emptyRec);
-          }
-        } else {
-          updated.yearOverall = emptyRec;
-        }
 
-        updated.academicRank = '';
-        updated.conductRank = 'Tốt';
-        updated.awardTitle = '';
-        updated.gpa = 0;
-        updated.subjects = {};
-        updated.evaluatedSubjects = {};
+          updated.academicRank = '';
+          updated.conductRank = 'Tốt';
+          updated.awardTitle = '';
+          updated.gpa = 0;
+          updated.subjects = {};
+          updated.evaluatedSubjects = {};
 
-        return normalizeStudentTT22(updated);
-      }),
-    }));
+          return normalizeStudentTT22(updated);
+        }),
+      };
+    });
     if (isInlineMode) {
       setIsInlineMode(false);
       setInlineDrafts({});
     }
-    alert(`Đã xóa sạch điểm ${termLabel}. Giao diện các môn hiện đã để trống (-)!`);
   };
 
   const handleSaveInlineBatch = () => {

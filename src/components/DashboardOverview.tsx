@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { AppState, NavPage, Task } from '../types';
 import { isReadOnly, isTeacher, hasPermission } from '../utils/permissionUtils';
+import { getCurrentSchoolWeekInfo } from '../utils/dateWeekUtils';
 
 interface DashboardOverviewProps {
   appState: AppState;
@@ -38,6 +39,11 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   onSelectStudent,
 }) => {
   const { students, attendanceHistory, todayDate, tasks, notices, currentUser } = appState;
+  const latestWeekInfo = getCurrentSchoolWeekInfo();
+  const activeCurrentWeek =
+    appState.currentEmulationWeek && appState.currentEmulationWeek !== 2
+      ? appState.currentEmulationWeek
+      : latestWeekInfo.currentWeek;
   const readOnly = isReadOnly(appState);
   const isGVCN = isTeacher(appState);
   const canToggle = hasPermission(appState, 'canToggleTasks');
@@ -438,7 +444,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               <span className="text-amber-500">🏆</span>
               <h3 className="text-sm font-bold text-[#17365D]">Thi đua - Nề nếp</h3>
               <span className="text-[10.5px] px-2 py-0.5 rounded-md bg-blue-100 text-[#0B438A] font-bold font-mono">
-                Tuần 2/35
+                Tuần {activeCurrentWeek}/35
               </span>
             </div>
             <button
@@ -466,7 +472,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span className="text-[10px] text-[#66809F] font-medium">Tuần 2/35</span>
+                <span className="text-[10px] text-[#66809F] font-medium">Tuần {activeCurrentWeek}/35</span>
                 <span className="text-sm font-extrabold text-[#0B438A] font-mono">385/400</span>
               </div>
             </div>

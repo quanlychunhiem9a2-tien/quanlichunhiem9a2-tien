@@ -217,6 +217,23 @@ export interface RolePermissions {
   canConfigureSystem: boolean; // Cài đặt hệ thống
 }
 
+export interface DutyDayAssignment {
+  dayIndex: number; // 0 = Thứ Hai .. 5 = Thứ Bảy
+  dayLabel: string; // 'Thứ Hai' .. 'Thứ Bảy'
+  dateStr: string;  // DD/MM/YYYY
+  studentIds: string[];
+  tasks: string[];
+  status: 'done' | 'pending' | 'reminded';
+  note?: string;
+}
+
+export interface WeeklyDutyRoster {
+  weekNumber: number; // 1..35
+  teamId: number;     // 1..4
+  supervisorName: string;
+  days: DutyDayAssignment[];
+}
+
 export interface AppState {
   schoolName: string;
   slogan: string;
@@ -231,6 +248,7 @@ export interface AppState {
   notices: Notice[];
   emulationRecords: EmulationRecord[];
   currentEmulationWeek?: number; // 1 to 35
+  weeklyDutyRosters?: Record<number, WeeklyDutyRoster>;
   plans: HomeroomPlan[];
   documents: DocumentItem[];
   parentContacts: ParentContact[];

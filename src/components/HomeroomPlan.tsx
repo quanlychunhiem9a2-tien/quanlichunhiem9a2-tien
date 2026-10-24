@@ -31,23 +31,20 @@ import {
 import { AppState, HomeroomPlan, SpecialStudentConcern } from '../types';
 import { sendAIChatMessage } from '../api';
 import { hasPermission, isReadOnly, isTeacher as isTeacherUtil } from '../utils/permissionUtils';
+import { getCurrentSchoolWeekInfo, getSchoolWeekMeta } from '../utils/dateWeekUtils';
+import { WeeklyDutyRosterPanel } from './WeeklyDutyRosterPanel';
 
 interface HomeroomPlanProps {
   appState: AppState;
   onUpdateState: (updater: (prev: AppState) => AppState) => void;
 }
 
-// 35 Weeks calendar calculation for School Year 2026-2027
-// Week 1 starts Monday, 31/08/2026 (Khai giảng 05/09/2026)
+// 35 Weeks calendar calculation for School Year 2026-2027 aligned with the latest date
 export const getWeekMeta = (weekNum: number) => {
-  const baseDate = new Date(2026, 7, 31); // 2026-08-31 Monday
-  const start = new Date(baseDate.getTime() + (weekNum - 1) * 7 * 24 * 3600 * 1000);
-  const end = new Date(start.getTime() + 5 * 24 * 3600 * 1000); // Saturday
-
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const startDate = `${pad(start.getDate())}/${pad(start.getMonth() + 1)}/${start.getFullYear()}`;
-  const endDate = `${pad(end.getDate())}/${pad(end.getMonth() + 1)}/${end.getFullYear()}`;
-  const semester: 1 | 2 = weekNum <= 18 ? 1 : 2;
+  const baseMeta = getSchoolWeekMeta(weekNum);
+  const startDate = baseMeta.startDate;
+  const endDate = baseMeta.endDate;
+  const semester: 1 | 2 = baseMeta.semester;
 
   const themes: Record<number, string> = {
     1: 'Chào năm học mới & Ổn định nề nếp lớp học',
@@ -108,8 +105,13 @@ export const HomeroomPlanComponent: React.FC<HomeroomPlanProps> = ({
   const canToggleTask = hasPermission(appState, 'canToggleTasks');
   const canUseAI = hasPermission(appState, 'canUseAI');
 
-  // Selected week (1 to 35). Default to week 2
-  const [selectedWeek, setSelectedWeek] = useState<number>(2);
+  // Selected week (1 to 35). Default to current week based on latest date
+  const latestWeekInfo = useMemo(() => getCurrentSchoolWeekInfo(), []);
+  const defaultCurrentWeek =
+    appState.currentEmulationWeek && appState.currentEmulationWeek !== 2
+      ? appState.currentEmulationWeek
+      : latestWeekInfo.currentWeek;
+  const [selectedWeek, setSelectedWeek] = useState<number>(defaultCurrentWeek);
   const [semesterFilter, setSemesterFilter] = useState<'all' | 'hk1' | 'hk2'>('all');
   const [showMatrixModal, setShowMatrixModal] = useState(false);
 
@@ -807,7 +809,7 @@ ${plan.reviewNotes || 'Đang thực hiện trong tuần'}`;
                     {activePlan.semester === 1 ? 'Học kỳ I' : 'Học kỳ II'}
                   </span>
                   <span className="text-xs text-[#66809F] font-mono">
-                    ({activePlan.startDate} – {activePlan.endDate})
+                    ({currentMeta.startDate} – {currentMeta.endDate})
                   </span>
                 </div>
                 <h3 className="text-xl font-black text-[#17365D] tracking-tight">{activePlan.title}</h3>
@@ -1210,6 +1212,14 @@ ${plan.reviewNotes || 'Đang thực hiện trong tuần'}`;
           </div>
         </div>
       )}
+
+      {/* Weekly Student Cleaning Duty Roster for Selected Week */}
+      <WeeklyDutyRosterPanel
+        appState={appState}
+        selectedWeek={selectedWeek}
+        onSelectWeek={(w) => setSelectedWeek(w)}
+        onUpdateState={onUpdateState}
+      />
 
       {/* MODAL 1: Create or Edit Plan Full Form */}
       {isEditModalOpen && (

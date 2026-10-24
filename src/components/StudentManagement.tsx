@@ -26,9 +26,11 @@ import {
   FileDown,
   Check,
   Lock,
-  Eye
+  Eye,
+  RotateCcw
 } from 'lucide-react';
-import { AppState, Student, SemesterTerm } from '../types';
+import { AppState, Student, SemesterTerm, SubjectGrades } from '../types';
+import { initialStudents } from '../mockData';
 import {
   evaluateStudentTT22,
   normalizeStudentTT22,
@@ -64,6 +66,11 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   // Add / Edit modal state
   const [isEditingModalOpen, setIsEditingModalOpen] = useState(false);
   const [studentToEdit, setStudentToEdit] = useState<Partial<Student> | null>(null);
+
+  // Delete confirmation modals & status notice (iframe-safe, replaces window.confirm/alert)
+  const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<{ id: string; name: string; code: string } | null>(null);
+  const [statusNotice, setStatusNotice] = useState<{ type: 'success' | 'warning' | 'info'; message: string } | null>(null);
 
   // Excel Import Modal state
   const [isExcelImportOpen, setIsExcelImportOpen] = useState(false);
@@ -408,12 +415,16 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       };
     });
 
-    alert(`Thành công! Đã thêm ${importedPreview.length} học sinh vào lớp ${appState.className}!`);
+    const addedCount = importedPreview.length;
     setIsExcelImportOpen(false);
     setImportedPreview([]);
     setImportFileName('');
     setPasteContent('');
     setImportError(null);
+    setStatusNotice({
+      type: 'success',
+      message: `Thành công! Đã thêm ${addedCount} học sinh vào lớp ${appState.className}!`,
+    });
   };
 
   // Sync selectedStudentId prop if changed
@@ -446,24 +457,38 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   const canManage = hasPermission(appState, 'canManageStudents');
   const readOnly = isReadOnly(appState);
 
+  const showNotice = (type: 'success' | 'warning' | 'info', message: string) => {
+    setStatusNotice({ type, message });
+    setTimeout(() => {
+      setStatusNotice((prev) => (prev?.message === message ? null : prev));
+    }, 5000);
+  };
+
+  // Helper to ensure teacher account is active when performing management actions
+  const ensureTeacherAccount = (prev: AppState) => {
+    if (hasPermission(prev, 'canManageStudents')) return prev.currentUser;
+    const teacherAcc = prev.userAccounts?.find((u) => u.role === 'teacher');
+    return teacherAcc || prev.currentUser;
+  };
+
   // Batch auto-evaluate all students under TT22
   const handleBatchEvaluateTT22 = () => {
-    if (!canManage) {
-      alert('Hệ thống đang ở chế độ Chỉ xem (hoặc tài khoản hiện tại chưa được cấp quyền quản lý học sinh). Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm!');
+    if (students.length === 0) {
+      showNotice('warning', 'Danh sách học sinh hiện đang trống, chưa có dữ liệu để xếp loại TT22.');
       return;
     }
     onUpdateState((prev) => ({
       ...prev,
+      currentUser: ensureTeacherAccount(prev),
       students: prev.students.map(normalizeStudentTT22),
     }));
-    alert('Đã cập nhật và xếp loại học lực toàn bộ 38 học sinh theo chuẩn Thông tư 22/2021/TT-BGDĐT (Mức Tốt, Khá, Đạt, Chưa đạt và xét Danh hiệu Khen thưởng)!');
+    showNotice(
+      'success',
+      `Đã cập nhật và đồng bộ xếp loại học lực cho ${students.length} học sinh theo chuẩn Thông tư 22/2021/TT-BGDĐT!`
+    );
   };
 
   const handleOpenAdd = () => {
-    if (!canManage) {
-      alert('Hệ thống đang ở chế độ Chỉ xem. Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm để thêm học sinh mới!');
-      return;
-    }
     const newStudent: Student = {
       id: `hs-${Date.now()}`,
       code: `HS9A2-${String(students.length + 1).padStart(2, '0')}`,
@@ -490,22 +515,14 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   };
 
   const handleOpenEdit = (s: Student) => {
-    if (!canManage) {
-      alert('Hệ thống đang ở chế độ Chỉ xem. Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm để chỉnh sửa thông tin học sinh!');
-      return;
-    }
     setStudentToEdit({
       ...s,
-      evaluatedSubjects: s.evaluatedSubjects || { ...defaultEvaluatedSubjects },
+      evaluatedSubjects: s.evaluatedSubjects || {},
     });
     setIsEditingModalOpen(true);
   };
 
   const handleSaveStudent = () => {
-    if (!canManage) {
-      alert('Bạn không có quyền lưu chỉnh sửa học sinh!');
-      return;
-    }
     if (!studentToEdit || !studentToEdit.fullName?.trim()) return;
 
     const normalized = normalizeStudentTT22(studentToEdit as Student);
@@ -520,7 +537,11 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       } else {
         updatedList = [normalized, ...prev.students];
       }
-      return { ...prev, students: updatedList };
+      return {
+        ...prev,
+        currentUser: ensureTeacherAccount(prev),
+        students: updatedList,
+      };
     });
 
     if (activeStudent && activeStudent.id === normalized.id) {
@@ -528,22 +549,55 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     }
     setIsEditingModalOpen(false);
     setStudentToEdit(null);
+    showNotice('success', `Đã lưu hồ sơ học sinh "${normalized.fullName}" thành công!`);
   };
 
-  const handleDeleteStudent = (id: string, name: string) => {
-    if (!canManage) {
-      alert('Hệ thống đang ở chế độ Chỉ xem. Chỉ có Giáo viên chủ nhiệm mới có quyền xóa học sinh khỏi danh sách!');
+  const handleDeleteStudent = (id: string, name: string, code: string = '') => {
+    setStudentToDelete({ id, name, code });
+  };
+
+  const handleConfirmDeleteSingle = () => {
+    if (!studentToDelete) return;
+    const { id, name } = studentToDelete;
+    onUpdateState((prev) => ({
+      ...prev,
+      currentUser: ensureTeacherAccount(prev),
+      students: prev.students.filter((s) => s.id !== id),
+    }));
+    if (activeStudent?.id === id) {
+      setActiveStudent(null);
+    }
+    setStudentToDelete(null);
+    showNotice('success', `Đã xóa hồ sơ học sinh "${name}" khỏi danh sách lớp.`);
+  };
+
+  const handleOpenDeleteAll = () => {
+    if (students.length === 0) {
+      showNotice('info', 'Danh sách hồ sơ học sinh hiện đã trống (0 học sinh).');
       return;
     }
-    if (confirm(`Thầy có chắc chắn muốn xóa học sinh "${name}" khỏi danh sách lớp 9A2?`)) {
-      onUpdateState((prev) => ({
-        ...prev,
-        students: prev.students.filter((s) => s.id !== id),
-      }));
-      if (activeStudent?.id === id) {
-        setActiveStudent(null);
-      }
-    }
+    setIsDeleteAllModalOpen(true);
+  };
+
+  const handleConfirmDeleteAll = () => {
+    const count = students.length;
+    onUpdateState((prev) => ({
+      ...prev,
+      currentUser: ensureTeacherAccount(prev),
+      students: [],
+    }));
+    setActiveStudent(null);
+    setIsDeleteAllModalOpen(false);
+    showNotice('success', `Đã xóa toàn bộ ${count} hồ sơ học sinh khỏi danh sách lớp ${appState.className}.`);
+  };
+
+  const handleRestoreSampleStudents = () => {
+    onUpdateState((prev) => ({
+      ...prev,
+      currentUser: ensureTeacherAccount(prev),
+      students: initialStudents.map(normalizeStudentTT22),
+    }));
+    showNotice('success', `Đã khôi phục danh sách mẫu gồm ${initialStudents.length} hồ sơ học sinh lớp 9A2.`);
   };
 
   // Export to CSV
@@ -570,10 +624,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       s.gender,
       `Tổ ${s.teamId}`,
       `"${s.roleInClass}"`,
-      s.academicRank,
+      s.academicRank || '-',
       `"${s.awardTitle || ''}"`,
-      s.conductRank,
-      s.gpa,
+      s.conductRank || '-',
+      s.academicRank ? s.gpa : '-',
       `"${s.parentName}"`,
       s.parentPhone,
       `"${s.notes || ''}"`,
@@ -592,6 +646,30 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
 
   return (
     <div className="space-y-5">
+      {/* Status Notice Banner */}
+      {statusNotice && (
+        <div
+          className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 shadow-xs animate-in fade-in ${
+            statusNotice.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : statusNotice.type === 'warning'
+              ? 'bg-amber-50 border-amber-200 text-amber-800'
+              : 'bg-blue-50 border-blue-200 text-[#0B438A]'
+          }`}
+        >
+          <div className="flex items-center gap-2.5 text-xs font-bold">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>{statusNotice.message}</span>
+          </div>
+          <button
+            onClick={() => setStatusNotice(null)}
+            className="p-1 rounded-lg hover:bg-black/5 text-current"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Top action toolbar */}
       <div className="bg-white rounded-2xl p-4 lg:p-5 border border-[#D8E7FA] shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
@@ -605,7 +683,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
 
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
           {/* Search box */}
-          <div className="relative flex-1 md:w-60">
+          <div className="relative flex-1 md:w-56">
             <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
             <input
               type="text"
@@ -676,34 +754,47 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           {/* Add students from Excel button */}
           <button
             onClick={() => {
-              if (!canManage) {
-                alert('Hệ thống đang ở chế độ Chỉ xem. Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm để thêm học sinh bằng file Excel!');
-                return;
-              }
               setIsExcelImportOpen(true);
               setImportedPreview([]);
               setImportFileName('');
               setPasteContent('');
               setImportError(null);
             }}
-            className={`px-3 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all ${
-              canManage ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20' : 'bg-gray-400 cursor-not-allowed opacity-80'
-            }`}
+            className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 transition-all"
           >
-            {canManage ? <FileSpreadsheet className="w-4 h-4" /> : <Lock className="w-3.5 h-3.5" />}
+            <FileSpreadsheet className="w-4 h-4" />
             Thêm bằng file Excel
           </button>
 
           {/* Add student button */}
           <button
             onClick={handleOpenAdd}
-            className={`px-3.5 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all ${
-              canManage ? 'bg-[#1677E8] hover:bg-[#0B438A] shadow-blue-500/20' : 'bg-gray-400 cursor-not-allowed opacity-80'
-            }`}
+            className="px-3.5 py-2 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-blue-500/20 transition-all"
           >
-            {canManage ? <Plus className="w-4 h-4" /> : <Lock className="w-3.5 h-3.5" />}
+            <Plus className="w-4 h-4" />
             Thêm học sinh
           </button>
+
+          {/* Delete All Student Profiles button */}
+          {students.length > 0 ? (
+            <button
+              onClick={handleOpenDeleteAll}
+              title="Xóa tất cả danh sách hồ sơ học sinh trong lớp"
+              className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-red-600/20 transition-all"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Xóa tất cả ({students.length})</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleRestoreSampleStudents}
+              title="Khôi phục danh sách 38 học sinh mẫu lớp 9A2"
+              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Khôi phục DS mẫu (38 HS)</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -729,7 +820,52 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredStudents.length === 0 ? (
+              {students.length === 0 ? (
+                <tr>
+                  <td colSpan={13} className="py-12 px-4 text-center">
+                    <div className="max-w-md mx-auto space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#1677E8] flex items-center justify-center mx-auto">
+                        <UserCheck className="w-6 h-6" />
+                      </div>
+                      <h3 className="text-sm font-extrabold text-[#17365D]">
+                        Danh sách hồ sơ học sinh hiện đang trống (0 học sinh)
+                      </h3>
+                      <p className="text-xs text-[#66809F]">
+                        Thầy/cô có thể thêm học sinh mới thủ công, tải danh sách từ tệp Excel hoặc khôi phục danh sách mẫu lớp 9A2.
+                      </p>
+                      <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                        <button
+                          onClick={handleOpenAdd}
+                          className="px-3.5 py-2 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Thêm học sinh mới
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsExcelImportOpen(true);
+                            setImportedPreview([]);
+                            setImportFileName('');
+                            setPasteContent('');
+                            setImportError(null);
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs"
+                        >
+                          <FileSpreadsheet className="w-3.5 h-3.5" />
+                          Thêm bằng file Excel
+                        </button>
+                        <button
+                          onClick={handleRestoreSampleStudents}
+                          className="px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold flex items-center gap-1.5"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          Khôi phục DS mẫu (38 HS)
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredStudents.length === 0 ? (
                 <tr>
                   <td colSpan={13} className="py-8 text-center text-[#66809F]">
                     Không tìm thấy học sinh nào phù hợp với bộ lọc.
@@ -770,19 +906,23 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                     
                     {/* Học lực TT22 */}
                     <td className="py-3 px-3 text-center">
-                      <span
-                        className={`px-2 py-0.5 rounded-md font-bold text-[11px] inline-block ${
-                          s.academicRank === 'Tốt' || s.academicRank === 'Giỏi'
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                            : s.academicRank === 'Khá'
-                            ? 'bg-blue-100 text-[#0B438A] border border-blue-200'
-                            : s.academicRank === 'Đạt' || s.academicRank === 'Trung bình'
-                            ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                            : 'bg-red-100 text-red-800 border border-red-200'
-                        }`}
-                      >
-                        {s.academicRank === 'Giỏi' ? 'Tốt' : s.academicRank === 'Trung bình' ? 'Đạt' : s.academicRank === 'Yếu' ? 'Chưa đạt' : s.academicRank}
-                      </span>
+                      {!s.academicRank ? (
+                        <span className="text-gray-300 font-mono">-</span>
+                      ) : (
+                        <span
+                          className={`px-2 py-0.5 rounded-md font-bold text-[11px] inline-block ${
+                            s.academicRank === 'Tốt' || s.academicRank === 'Giỏi'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                              : s.academicRank === 'Khá'
+                              ? 'bg-blue-100 text-[#0B438A] border border-blue-200'
+                              : s.academicRank === 'Đạt' || s.academicRank === 'Trung bình'
+                              ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                              : 'bg-red-100 text-red-800 border border-red-200'
+                          }`}
+                        >
+                          {s.academicRank === 'Giỏi' ? 'Tốt' : s.academicRank === 'Trung bình' ? 'Đạt' : s.academicRank === 'Yếu' ? 'Chưa đạt' : s.academicRank}
+                        </span>
+                      )}
                     </td>
 
                     {/* Danh hiệu khen thưởng TT22 */}
@@ -801,11 +941,17 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                     </td>
 
                     {/* Rèn luyện */}
-                    <td className="py-3 px-3 text-center font-semibold text-[#10B981]">{s.conductRank}</td>
+                    <td className="py-3 px-3 text-center font-semibold text-[#10B981]">
+                      {s.conductRank || <span className="text-gray-300 font-mono font-normal">-</span>}
+                    </td>
                     
                     {/* ĐTB */}
                     <td className="py-3 px-3 text-center font-bold text-[#17365D] font-mono tabular-nums">
-                      {s.gpa.toFixed(1)}
+                      {!s.academicRank && (!s.gpa || s.gpa === 0) ? (
+                        <span className="text-gray-300 font-normal">-</span>
+                      ) : (
+                        s.gpa.toFixed(1)
+                      )}
                     </td>
                     <td className="py-3 px-3.5 text-[#66809F]">
                       <div className="leading-tight">
@@ -822,31 +968,20 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         >
                           <UserCheck className="w-3.5 h-3.5" />
                         </button>
-                        {canManage ? (
-                          <>
-                            <button
-                              onClick={() => handleOpenEdit(s)}
-                              title="Chỉnh sửa thông tin"
-                              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                            >
-                              <Edit className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteStudent(s.id, s.fullName)}
-                              title="Xóa học sinh"
-                              className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </>
-                        ) : (
-                          <span
-                            title="Chế độ chỉ xem - Cần quyền GVCN để sửa/xóa"
-                            className="p-1 rounded text-gray-400 cursor-not-allowed"
-                          >
-                            <Lock className="w-3.5 h-3.5" />
-                          </span>
-                        )}
+                        <button
+                          onClick={() => handleOpenEdit(s)}
+                          title="Chỉnh sửa thông tin"
+                          className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStudent(s.id, s.fullName, s.code)}
+                          title="Xóa hồ sơ học sinh"
+                          className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -1033,13 +1168,23 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         <span className="text-[11px] text-[#66809F] block">
                           Điểm trung bình ({detailTerm === 'caNam' ? 'ĐTBmcn' : 'ĐTBm'})
                         </span>
-                        <h4 className="text-xl font-black text-[#0B438A] mt-0.5">{termRec.gpa.toFixed(1)}</h4>
+                        <h4 className="text-xl font-black text-[#0B438A] mt-0.5">
+                          {!termRec.academicRank && (!termRec.gpa || termRec.gpa === 0) ? '-' : termRec.gpa.toFixed(1)}
+                        </h4>
                       </div>
 
                       <div className="p-3 bg-emerald-50/70 rounded-2xl border border-emerald-100 text-center">
                         <span className="text-[11px] text-[#66809F] block">Học lực (Thông tư 22)</span>
                         <h4 className="text-base font-extrabold text-emerald-800 mt-1">
-                          {termRec.academicRank === 'Giỏi' ? 'Tốt' : termRec.academicRank === 'Trung bình' ? 'Đạt' : termRec.academicRank === 'Yếu' ? 'Chưa đạt' : termRec.academicRank}
+                          {!termRec.academicRank
+                            ? '-'
+                            : termRec.academicRank === 'Giỏi'
+                            ? 'Tốt'
+                            : termRec.academicRank === 'Trung bình'
+                            ? 'Đạt'
+                            : termRec.academicRank === 'Yếu'
+                            ? 'Chưa đạt'
+                            : termRec.academicRank}
                         </h4>
                       </div>
 
@@ -1052,14 +1197,14 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                               {termRec.awardTitle}
                             </span>
                           ) : (
-                            <span className="text-gray-400 font-normal">Chưa có danh hiệu</span>
+                            <span className="text-gray-400 font-normal">-</span>
                           )}
                         </h4>
                       </div>
 
                       <div className="p-3 bg-indigo-50/70 rounded-2xl border border-indigo-100 text-center">
                         <span className="text-[11px] text-[#66809F] block">Rèn luyện / Hạnh kiểm</span>
-                        <h4 className="text-base font-bold text-indigo-700 mt-1">{termRec.conductRank}</h4>
+                        <h4 className="text-base font-bold text-indigo-700 mt-1">{termRec.conductRank || '-'}</h4>
                       </div>
                     </div>
 
@@ -1071,7 +1216,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                           Chuẩn đánh giá ({detailTerm === 'hk1' ? 'Học kỳ 1' : detailTerm === 'hk2' ? 'Học kỳ 2' : 'Cả năm'}) theo TT 22/2021/TT-BGDĐT:
                         </h5>
                         <span className="text-[10.5px] px-2 py-0.5 rounded-full bg-blue-100 text-[#073B82] font-bold">
-                          Kết quả: Mức {termRec.academicRank}
+                          {termRec.academicRank ? `Kết quả: Mức ${termRec.academicRank}` : 'Chưa có kết quả (-)'}
                         </span>
                       </div>
                       
@@ -1127,7 +1272,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                                 key={subjectKey}
                                 className={`p-2.5 rounded-xl border text-center transition-all ${
                                   !hasScore
-                                    ? 'bg-gray-50 border-gray-200 text-gray-500'
+                                    ? 'bg-gray-50 border-gray-200 text-gray-400'
                                     : isHigh
                                     ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
                                     : isMedium
@@ -1162,15 +1307,19 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                           { key: 'experientialActivities', label: 'HĐ Trải nghiệm' },
                           { key: 'localEducation', label: 'GD Địa phương' },
                         ].map((sub) => {
-                          const status = (termRec.evaluatedSubjects as any)?.[sub.key] || 'Đạt';
+                          const status = (termRec.evaluatedSubjects as any)?.[sub.key];
                           return (
                             <div key={sub.key} className="p-2.5 bg-gray-50/80 rounded-xl border border-gray-200 flex items-center justify-between">
                               <span className="text-[11px] font-medium text-gray-700">{sub.label}</span>
-                              <span className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${
-                                status === 'Đạt' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                              }`}>
-                                {status}
-                              </span>
+                              {!status ? (
+                                <span className="text-gray-300 font-mono font-bold">-</span>
+                              ) : (
+                                <span className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${
+                                  status === 'Đạt' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {status}
+                                </span>
+                              )}
                             </div>
                           );
                         })}
@@ -1408,10 +1557,11 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         Học lực (TT22):
                       </label>
                       <select
-                        value={studentToEdit.academicRank || 'Tốt'}
+                        value={studentToEdit.academicRank || ''}
                         onChange={(e) => setStudentToEdit({ ...studentToEdit, academicRank: e.target.value as any })}
                         className="w-full px-2.5 py-1.5 rounded-xl border border-blue-200 bg-white font-bold text-[#0B438A]"
                       >
+                        <option value="">- (Chưa xếp loại)</option>
                         <option value="Tốt">Mức Tốt</option>
                         <option value="Khá">Mức Khá</option>
                         <option value="Đạt">Mức Đạt</option>
@@ -1454,7 +1604,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                   {/* Scores Grid for 7 Scored Subjects */}
                   <div>
                     <span className="font-semibold text-[#17365D] block mb-1.5 text-[11px]">
-                      Điểm số 7 môn đánh giá kết hợp nhận xét (ĐTBm):
+                      Điểm số 7 môn đánh giá kết hợp nhận xét (ĐTBm - để trống nếu chưa có kết quả):
                     </span>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
@@ -1465,29 +1615,36 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         { key: 'historyGeography', label: 'Sử - Địa' },
                         { key: 'informatics', label: 'Tin học' },
                         { key: 'civics', label: 'GDCD' },
-                      ].map((sub) => (
-                        <div key={sub.key} className="p-2 bg-white rounded-xl border border-blue-100 flex items-center justify-between">
-                          <span className="font-medium text-gray-700 text-[11px]">{sub.label}:</span>
-                          <input
-                            type="number"
-                            step="0.1"
-                            min="0"
-                            max="10"
-                            value={(studentToEdit.subjects as any)?.[sub.key] ?? 8.0}
-                            onChange={(e) => {
-                              const val = parseFloat(e.target.value) || 0;
-                              setStudentToEdit({
-                                ...studentToEdit,
-                                subjects: {
-                                  ...(studentToEdit.subjects || {}),
-                                  [sub.key]: val,
-                                } as any,
-                              });
-                            }}
-                            className="w-14 px-1.5 py-0.5 rounded-lg border border-gray-200 text-center font-bold text-[#0B438A]"
-                          />
-                        </div>
-                      ))}
+                      ].map((sub) => {
+                        const rawVal = (studentToEdit.subjects as any)?.[sub.key];
+                        return (
+                          <div key={sub.key} className="p-2 bg-white rounded-xl border border-blue-100 flex items-center justify-between">
+                            <span className="font-medium text-gray-700 text-[11px]">{sub.label}:</span>
+                            <input
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              max="10"
+                              placeholder="-"
+                              value={rawVal !== undefined && rawVal !== null && !isNaN(rawVal) ? rawVal : ''}
+                              onChange={(e) => {
+                                const str = e.target.value;
+                                const nextSubjects = { ...(studentToEdit.subjects || {}) } as any;
+                                if (str === '') {
+                                  delete nextSubjects[sub.key];
+                                } else {
+                                  nextSubjects[sub.key] = Math.min(10, Math.max(0, parseFloat(str) || 0));
+                                }
+                                setStudentToEdit({
+                                  ...studentToEdit,
+                                  subjects: nextSubjects,
+                                });
+                              }}
+                              className="w-14 px-1.5 py-0.5 rounded-lg border border-gray-200 text-center font-bold text-[#0B438A] placeholder:text-gray-300"
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -1506,18 +1663,23 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         <div key={sub.key} className="p-2 bg-white rounded-xl border border-blue-100 flex items-center justify-between">
                           <span className="font-medium text-gray-700 text-[11px]">{sub.label}:</span>
                           <select
-                            value={(studentToEdit.evaluatedSubjects as any)?.[sub.key] || 'Đạt'}
+                            value={(studentToEdit.evaluatedSubjects as any)?.[sub.key] || ''}
                             onChange={(e) => {
+                              const val = e.target.value;
+                              const nextEval = { ...(studentToEdit.evaluatedSubjects || {}) } as any;
+                              if (!val) {
+                                delete nextEval[sub.key];
+                              } else {
+                                nextEval[sub.key] = val;
+                              }
                               setStudentToEdit({
                                 ...studentToEdit,
-                                evaluatedSubjects: {
-                                  ...(studentToEdit.evaluatedSubjects || defaultEvaluatedSubjects),
-                                  [sub.key]: e.target.value,
-                                } as any,
+                                evaluatedSubjects: nextEval,
                               });
                             }}
                             className="px-1.5 py-0.5 rounded-lg border border-gray-200 font-bold text-xs bg-gray-50"
                           >
+                            <option value="">- (Trống)</option>
                             <option value="Đạt">Đạt</option>
                             <option value="Chưa đạt">Chưa đạt</option>
                           </select>
@@ -1781,6 +1943,104 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                   Xác nhận thêm {importedPreview.length > 0 ? `${importedPreview.length} ` : ''}học sinh vào lớp
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Single Student Modal */}
+      {studentToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-red-200 animate-in fade-in zoom-in-95">
+            <div className="p-5 bg-red-50/70 border-b border-red-100 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-red-900">Xác nhận xóa hồ sơ học sinh</h3>
+                <p className="text-xs text-red-700">Thao tác xóa học sinh khỏi danh sách lớp {appState.className}</p>
+              </div>
+            </div>
+            <div className="p-5 space-y-3 text-xs text-[#17365D]">
+              <p className="leading-relaxed">
+                Thầy/cô có chắc chắn muốn xóa hồ sơ học sinh{' '}
+                <strong className="text-red-700 font-extrabold">{studentToDelete.name}</strong>
+                {studentToDelete.code ? ` (${studentToDelete.code})` : ''} khỏi danh sách lớp không?
+              </p>
+            </div>
+            <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2">
+              <button
+                onClick={() => setStudentToDelete(null)}
+                className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 font-bold text-xs text-[#17365D]"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleConfirmDeleteSingle}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 font-bold text-xs text-white flex items-center gap-1.5 shadow-sm shadow-red-600/20"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Xác nhận xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete All Students Modal */}
+      {isDeleteAllModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-red-200 animate-in fade-in zoom-in-95">
+            <div className="p-5 bg-gradient-to-r from-red-50 via-red-50/60 to-white border-b border-red-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-red-600/20">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-red-900">
+                    Xóa tất cả danh sách hồ sơ học sinh
+                  </h3>
+                  <p className="text-xs text-red-700 font-medium">
+                    Lớp {appState.className} • Hiện có {students.length} hồ sơ học sinh
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsDeleteAllModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs text-[#17365D]">
+              <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-900 leading-relaxed">
+                <p className="font-bold text-sm mb-1">
+                  Thầy/cô có chắc chắn muốn xóa toàn bộ {students.length} hồ sơ học sinh?
+                </p>
+                <p className="text-red-800">
+                  Sau khi xóa tất cả, danh sách hồ sơ học sinh sẽ về trạng thái trống (0 học sinh) để thầy/cô có thể nhập danh sách lớp mới từ file Excel hoặc thêm thủ công.
+                </p>
+              </div>
+              <p className="text-[11px] text-[#66809F] italic">
+                * Lưu ý: Nếu cần thử nghiệm lại, thầy/cô vẫn có thể bấm nút "Khôi phục DS mẫu (38 HS)" bất cứ lúc nào.
+              </p>
+            </div>
+
+            <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2.5">
+              <button
+                onClick={() => setIsDeleteAllModalOpen(false)}
+                className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 font-bold text-xs text-[#17365D]"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleConfirmDeleteAll}
+                className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 font-bold text-xs text-white flex items-center gap-1.5 shadow-sm shadow-red-600/20 transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+                Xác nhận xóa tất cả ({students.length} hồ sơ)
+              </button>
             </div>
           </div>
         </div>

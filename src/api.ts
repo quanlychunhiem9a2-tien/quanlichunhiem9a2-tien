@@ -1,9 +1,20 @@
-import { AppState } from './types';
+import { AppState, HomeroomPlan } from './types';
 import { defaultAppState, guestUserAccount } from './mockData';
 import { normalizeStudentTT22 } from './utils/tt22Evaluation';
+import { getCurrentSchoolWeekInfo, getSchoolWeekMeta } from './utils/dateWeekUtils';
 
 const STORAGE_KEY = 'gvcn_ai_app_state_v2';
 const SESSION_USER_KEY = 'gvcn_ai_session_user_v2';
+
+function normalizePlanWeekDates(plan: HomeroomPlan): HomeroomPlan {
+  if (!plan.weekNumber || plan.weekNumber < 1 || plan.weekNumber > 35) return plan;
+  const meta = getSchoolWeekMeta(plan.weekNumber);
+  return {
+    ...plan,
+    startDate: meta.startDate,
+    endDate: meta.endDate,
+  };
+}
 
 function getSessionUser() {
   try {
@@ -19,16 +30,31 @@ function getSessionUser() {
 
 export async function fetchAppState(): Promise<AppState> {
   const activeUser = getSessionUser();
+  const latestWeek = getCurrentSchoolWeekInfo();
 
   try {
     const res = await fetch('/api/db');
     if (res.ok) {
       const json = await res.json();
       if (json && json.data) {
-        const rawStudents = json.data.students || defaultAppState.students;
+        const rawStudents = Array.isArray(json.data.students) ? json.data.students : defaultAppState.students;
+        const rawPlans = Array.isArray(json.data.plans) ? json.data.plans : defaultAppState.plans;
+        const resolvedWeek =
+          !json.data.currentEmulationWeek ||
+          json.data.currentEmulationWeek === 2 ||
+          json.data.currentEmulationWeek === 8
+            ? latestWeek.currentWeek
+            : json.data.currentEmulationWeek;
+        const resolvedToday =
+          !json.data.todayDate || json.data.todayDate === '2026-09-11'
+            ? latestWeek.todayISO
+            : json.data.todayDate;
         return {
           ...defaultAppState,
           ...json.data,
+          todayDate: resolvedToday,
+          currentEmulationWeek: resolvedWeek,
+          plans: rawPlans.map(normalizePlanWeekDates),
           students: rawStudents.map(normalizeStudentTT22),
           currentUser: activeUser,
           userAccounts: json.data.userAccounts || defaultAppState.userAccounts,
@@ -45,10 +71,24 @@ export async function fetchAppState(): Promise<AppState> {
     const local = localStorage.getItem(STORAGE_KEY);
     if (local) {
       const parsed = JSON.parse(local);
-      const rawStudents = parsed.students || defaultAppState.students;
+      const rawStudents = Array.isArray(parsed.students) ? parsed.students : defaultAppState.students;
+      const rawPlans = Array.isArray(parsed.plans) ? parsed.plans : defaultAppState.plans;
+      const resolvedWeek =
+        !parsed.currentEmulationWeek ||
+        parsed.currentEmulationWeek === 2 ||
+        parsed.currentEmulationWeek === 8
+          ? latestWeek.currentWeek
+          : parsed.currentEmulationWeek;
+      const resolvedToday =
+        !parsed.todayDate || parsed.todayDate === '2026-09-11'
+          ? latestWeek.todayISO
+          : parsed.todayDate;
       return {
         ...defaultAppState,
         ...parsed,
+        todayDate: resolvedToday,
+        currentEmulationWeek: resolvedWeek,
+        plans: rawPlans.map(normalizePlanWeekDates),
         students: rawStudents.map(normalizeStudentTT22),
         currentUser: activeUser,
         userAccounts: parsed.userAccounts || defaultAppState.userAccounts,

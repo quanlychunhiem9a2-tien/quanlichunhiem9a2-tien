@@ -1,5 +1,7 @@
 import { AppState, Student, UserAccount, UserRole, RolePermissions } from './types';
+import { getCurrentSchoolWeekInfo } from './utils/dateWeekUtils';
 
+const latestSchoolWeek = getCurrentSchoolWeekInfo();
 
 
 export const sampleDemoStudentGrades = {
@@ -1944,16 +1946,16 @@ export const initialEmulationRecords = [
 export const initialPlans = [
   {
     id: 'plan-w1',
-    title: 'Kế hoạch công tác chủ nhiệm Tuần 1 (Tháng 9/2026)',
+    title: 'Kế hoạch công tác chủ nhiệm Tuần 1 (07/09/2026 – 12/09/2026)',
     period: 'Tuần' as const,
     weekNumber: 1,
     semester: 1 as const,
     theme: 'Chào năm học mới & Ổn định nề nếp lớp học',
-    startDate: '01/09/2026',
-    endDate: '06/09/2026',
+    startDate: '07/09/2026',
+    endDate: '12/09/2026',
     goals: [
       'Nhanh chóng ổn định tổ chức lớp, bầu Ban cán sự lâm thời',
-      'Chuẩn bị chu đáo lễ Khai giảng năm học mới ngày 05/09',
+      'Duy trì khí thế học tập đầu năm sau Lễ Khai giảng',
       'Phổ biến nội quy nhà trường và quy chế thi đua năm học 2026 - 2027',
     ],
     measures: [
@@ -1962,9 +1964,9 @@ export const initialPlans = [
       'Lập nhóm Zalo liên lạc phụ huynh học sinh lớp 9A2',
     ],
     tasks: [
-      { id: 'pt-w1-1', day: 'Thứ Ba (01/09)', content: 'Tập trung học sinh nhận lớp, phát thời khóa biểu tạm thời', responsible: 'GVCN & Lớp trưởng', done: true },
-      { id: 'pt-w1-2', day: 'Thứ Năm (03/09)', content: 'Tập dượt nghi thức diễu hành và xếp hàng khai giảng', responsible: 'BCH Chi đội & Cả lớp', done: true },
-      { id: 'pt-w1-3', day: 'Thứ Bảy (05/09)', content: 'Dự Lễ Khai giảng năm học mới 2026-2027 toàn trường', responsible: 'GVCN & Toàn thể HS', done: true },
+      { id: 'pt-w1-1', day: 'Thứ Hai (07/09)', content: 'Chào cờ đầu tuần 1, ổn định tổ chức lớp và thực hiện thời khóa biểu chính thức', responsible: 'GVCN & Lớp trưởng', done: true },
+      { id: 'pt-w1-2', day: 'Thứ Tư (09/09)', content: 'Phổ biến nội quy học sinh và quy chế chấm điểm thi đua 4 tổ', responsible: 'BCH Chi đội & Cả lớp', done: true },
+      { id: 'pt-w1-3', day: 'Thứ Bảy (12/09)', content: 'Sinh hoạt lớp Tuần 1: Tổng kết nề nếp tuần đầu tiên của năm học 2026-2027', responsible: 'GVCN & Toàn thể HS', done: true },
     ],
     specialStudents: [
       {
@@ -1979,17 +1981,17 @@ export const initialPlans = [
       parents: 'Gửi danh mục SGK và đồ dùng học tập cần chuẩn bị cho lớp 9',
       youthUnion: 'Đăng ký danh sách thi đua nề nếp chi đội 9A2',
     },
-    reviewNotes: 'Lớp tập trung đúng giờ, 100% học sinh mặc đồng phục trang nghiêm trong ngày khai giảng. Ban cán sự lâm thời hoạt động nhiệt tình.',
+    reviewNotes: 'Lớp tập trung đúng giờ, 100% học sinh mặc đồng phục trang nghiêm trong tuần đầu năm học. Ban cán sự hoạt động nhiệt tình.',
   },
   {
     id: 'plan-1',
-    title: 'Kế hoạch công tác chủ nhiệm Tuần 2 (Tháng 9/2026)',
+    title: 'Kế hoạch công tác chủ nhiệm Tuần 2 (14/09/2026 – 19/09/2026)',
     period: 'Tuần' as const,
     weekNumber: 2,
     semester: 1 as const,
     theme: 'Phát động phong trào thi đua "Hoa điểm tốt"',
-    startDate: '08/09/2026',
-    endDate: '13/09/2026',
+    startDate: '14/09/2026',
+    endDate: '19/09/2026',
     goals: [
       'Ổn định sĩ số, duy trì nề nếp 15 phút truy bài đầu giờ nghiêm túc',
       'Chuẩn bị chu đáo nội dung Đại hội Chi đội và Đại hội Cha mẹ học sinh đầu năm',
@@ -1998,14 +2000,14 @@ export const initialPlans = [
     measures: [
       'Phân công ban cán sự kiểm tra thẻ học sinh, khăn quàng đỏ từ cổng lớp',
       'Gặp gỡ động viên 3 học sinh có học lực trung bình - yếu (Đạt, Trung, Khoa)',
-      'Trao đổi qua Zalo nhóm lớp về lịch họp phụ huynh ngày 11/09',
+      'Trao đổi qua Zalo nhóm lớp về lịch họp phụ huynh đầu năm',
     ],
     tasks: [
-      { id: 'pt-1', day: 'Thứ Hai (08/09)', content: 'Chào cờ đầu tuần, sinh hoạt chủ điểm "Tự hào truyền thống trường Võ Thị Sáu"', responsible: 'GVCN & Cả lớp', done: true },
-      { id: 'pt-2', day: 'Thứ Ba (09/09)', content: 'Kiểm tra sách vở, phân chia đôi bạn cùng tiến môn Toán và Tiếng Anh', responsible: 'Lớp phó học tập', done: true },
-      { id: 'pt-3', day: 'Thứ Năm (11/09)', content: 'Tổ chức Đại hội Phụ huynh học sinh lớp 9A2 đầu năm học', responsible: 'GVCN', done: true },
-      { id: 'pt-4', day: 'Thứ Sáu (12/09)', content: 'Rà soát sổ theo dõi thi đua 4 tổ, chấm điểm trực nhật phòng học', responsible: 'Lớp phó đời sống', done: false },
-      { id: 'pt-5', day: 'Thứ Bảy (13/09)', content: 'Tiết sinh hoạt lớp, tổng kết thi đua tuần 2 và khen thưởng học sinh tiêu biểu', responsible: 'Ban cán sự & GVCN', done: false },
+      { id: 'pt-1', day: 'Thứ Hai (14/09)', content: 'Chào cờ đầu tuần, sinh hoạt chủ điểm "Tự hào truyền thống trường Võ Thị Sáu"', responsible: 'GVCN & Cả lớp', done: true },
+      { id: 'pt-2', day: 'Thứ Ba (15/09)', content: 'Kiểm tra sách vở, phân chia đôi bạn cùng tiến môn Toán và Tiếng Anh', responsible: 'Lớp phó học tập', done: true },
+      { id: 'pt-3', day: 'Thứ Năm (17/09)', content: 'Tổ chức Đại hội Phụ huynh học sinh lớp 9A2 đầu năm học', responsible: 'GVCN', done: true },
+      { id: 'pt-4', day: 'Thứ Sáu (18/09)', content: 'Rà soát sổ theo dõi thi đua 4 tổ, chấm điểm trực nhật phòng học', responsible: 'Lớp phó đời sống', done: false },
+      { id: 'pt-5', day: 'Thứ Bảy (19/09)', content: 'Tiết sinh hoạt lớp, tổng kết thi đua tuần 2 và khen thưởng học sinh tiêu biểu', responsible: 'Ban cán sự & GVCN', done: false },
     ],
     specialStudents: [
       {
@@ -2030,13 +2032,13 @@ export const initialPlans = [
   },
   {
     id: 'plan-w3',
-    title: 'Kế hoạch công tác chủ nhiệm Tuần 3 (Tháng 9/2026)',
+    title: 'Kế hoạch công tác chủ nhiệm Tuần 3 (21/09/2026 – 26/09/2026)',
     period: 'Tuần' as const,
     weekNumber: 3,
     semester: 1 as const,
     theme: 'Thực hiện An toàn giao thông & Văn hóa học đường',
-    startDate: '15/09/2026',
-    endDate: '20/09/2026',
+    startDate: '21/09/2026',
+    endDate: '26/09/2026',
     goals: [
       '100% học sinh ký cam kết chấp hành nghiêm chỉnh luật An toàn giao thông',
       'Đẩy mạnh phong trào học tập, không có học sinh bị điểm dưới trung bình',
@@ -2048,11 +2050,11 @@ export const initialPlans = [
       'Thành lập đội tuyển học sinh giỏi cấp trường các môn Toán, Văn, Anh',
     ],
     tasks: [
-      { id: 'pt-w3-1', day: 'Thứ Hai (15/09)', content: 'Chào cờ, ký cam kết ATGT và không bạo lực học đường', responsible: 'GVCN & Toàn thể HS', done: false },
-      { id: 'pt-w3-2', day: 'Thứ Ba (16/09)', content: 'Kiểm tra đột xuất nề nếp đội mũ bảo hiểm khi đi xe máy/xe đạp điện', responsible: 'Cờ đỏ & Lớp phó nề nếp', done: false },
-      { id: 'pt-w3-3', day: 'Thứ Tư (17/09)', content: 'Bắt đầu lịch phụ đạo học sinh yếu môn Tiếng Anh buổi chiều', responsible: 'GVCN & Cô giáo Tiếng Anh', done: false },
-      { id: 'pt-w3-4', day: 'Thứ Sáu (19/09)', content: 'Kiểm tra vệ sinh môi trường, chăm sóc công trình măng non chi đội', responsible: 'Tổ 1 & Tổ 2', done: false },
-      { id: 'pt-w3-5', day: 'Thứ Bảy (20/09)', content: 'Sinh hoạt lớp: Rèn luyện kỹ năng ứng xử văn hóa trên mạng xã hội', responsible: 'BCH Chi đội & GVCN', done: false },
+      { id: 'pt-w3-1', day: 'Thứ Hai (21/09)', content: 'Chào cờ, ký cam kết ATGT và không bạo lực học đường', responsible: 'GVCN & Toàn thể HS', done: false },
+      { id: 'pt-w3-2', day: 'Thứ Ba (22/09)', content: 'Kiểm tra đột xuất nề nếp đội mũ bảo hiểm khi đi xe máy/xe đạp điện', responsible: 'Cờ đỏ & Lớp phó nề nếp', done: false },
+      { id: 'pt-w3-3', day: 'Thứ Tư (23/09)', content: 'Bắt đầu lịch phụ đạo học sinh yếu môn Tiếng Anh buổi chiều', responsible: 'GVCN & Cô giáo Tiếng Anh', done: false },
+      { id: 'pt-w3-4', day: 'Thứ Sáu (25/09)', content: 'Kiểm tra vệ sinh môi trường, chăm sóc công trình măng non chi đội', responsible: 'Tổ 1 & Tổ 2', done: false },
+      { id: 'pt-w3-5', day: 'Thứ Bảy (26/09)', content: 'Sinh hoạt lớp: Rèn luyện kỹ năng ứng xử văn hóa trên mạng xã hội', responsible: 'BCH Chi đội & GVCN', done: false },
     ],
     specialStudents: [
       {
@@ -2417,11 +2419,11 @@ export const defaultAppState: AppState = {
   academicYear: 'Năm học 2026 - 2027',
   students: initialStudents,
   attendanceHistory: initialWeeklyAttendance,
-  todayDate: '2026-09-11',
+  todayDate: latestSchoolWeek.todayISO,
   tasks: initialTasks,
   notices: initialNotices,
   emulationRecords: initialEmulationRecords,
-  currentEmulationWeek: 2,
+  currentEmulationWeek: latestSchoolWeek.currentWeek,
   plans: initialPlans,
   documents: initialDocuments,
   parentContacts: initialParentContacts,

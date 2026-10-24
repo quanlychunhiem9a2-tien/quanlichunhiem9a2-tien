@@ -18,6 +18,8 @@ import { SystemSettings } from './components/SystemSettings';
 import { QuickActionModals } from './components/QuickActionModals';
 import { NotificationsModal } from './components/NotificationsModal';
 
+import { isReadOnly, hasPermission, isTeacher } from './utils/permissionUtils';
+
 export default function App() {
   const [appState, setAppState] = useState<AppState>(defaultAppState);
   const [currentPage, setCurrentPage] = useState<NavPage>('home');
@@ -39,9 +41,16 @@ export default function App() {
   }, []);
 
   // State updater that auto-saves to backend and localStorage
+  // Root-level protection: In Read-Only (guest) mode, block any data mutation except logging in (updating currentUser)
   const handleUpdateState = (updater: (prev: AppState) => AppState) => {
     setAppState((prev) => {
       const next = updater(prev);
+      if (isReadOnly(prev)) {
+        const isLoggingIn = next.currentUser && next.currentUser.role !== 'guest';
+        if (!isLoggingIn) {
+          return prev;
+        }
+      }
       saveAppState(next);
       return next;
     });
@@ -49,6 +58,7 @@ export default function App() {
 
   // Toggle tasks completion
   const handleToggleTask = (taskId: string) => {
+    if (!hasPermission(appState, 'canToggleTasks')) return;
     handleUpdateState((prev) => ({
       ...prev,
       tasks: prev.tasks.map((t) => (t.id === taskId ? { ...t, completed: !t.completed } : t)),

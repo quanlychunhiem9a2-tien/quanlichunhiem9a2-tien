@@ -365,6 +365,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
 
   // Confirm import and save to appState
   const handleConfirmImport = () => {
+    if (!hasPermission(appState, 'canManageStudents')) return;
     if (importedPreview.length === 0) return;
 
     onUpdateState((prev) => {
@@ -471,6 +472,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   });
 
   const canManage = hasPermission(appState, 'canManageStudents');
+  const isGVCN = isTeacher(appState);
   const readOnly = isReadOnly(appState);
 
   const showNotice = (type: 'success' | 'warning' | 'info', message: string) => {
@@ -480,22 +482,18 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     }, 5000);
   };
 
-  // Helper to ensure teacher account is active when performing management actions
-  const ensureTeacherAccount = (prev: AppState) => {
-    if (hasPermission(prev, 'canManageStudents')) return prev.currentUser;
-    const teacherAcc = prev.userAccounts?.find((u) => u.role === 'teacher');
-    return teacherAcc || prev.currentUser;
-  };
-
   // Batch auto-evaluate all students under TT22
   const handleBatchEvaluateTT22 = () => {
+    if (!canManage) {
+      showNotice('warning', 'Bạn không có quyền thực hiện thao tác xếp loại học sinh.');
+      return;
+    }
     if (students.length === 0) {
       showNotice('warning', 'Danh sách học sinh hiện đang trống, chưa có dữ liệu để xếp loại TT22.');
       return;
     }
     onUpdateState((prev) => ({
       ...prev,
-      currentUser: ensureTeacherAccount(prev),
       students: prev.students.map(normalizeStudentTT22),
     }));
     showNotice(
@@ -505,6 +503,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   };
 
   const handleOpenAdd = () => {
+    if (!canManage) {
+      showNotice('warning', 'Chế độ Chỉ xem hoặc chưa được cấp quyền: Vui lòng đăng nhập tài khoản GVCN hoặc Cán sự được phân quyền.');
+      return;
+    }
     const newStudent: Student = {
       id: `hs-${Date.now()}`,
       code: `HS9A2-${String(students.length + 1).padStart(2, '0')}`,
@@ -532,6 +534,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   };
 
   const handleOpenEdit = (s: Student) => {
+    if (!canManage) {
+      showNotice('warning', 'Bạn không có quyền chỉnh sửa hồ sơ học sinh.');
+      return;
+    }
     setStudentToEdit({
       ...s,
       evaluatedSubjects: s.evaluatedSubjects || {},
@@ -540,6 +546,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   };
 
   const handleDirectStudentAvatarUpload = async (studentId: string, file?: File | null) => {
+    if (!canManage) {
+      showNotice('warning', 'Bạn không có quyền thay đổi ảnh đại diện học sinh.');
+      return;
+    }
     if (!file) return;
     try {
       const dataUrl = await processAvatarImageFile(file);
@@ -571,7 +581,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   };
 
   const handleEditModalAvatarUpload = async (file?: File | null) => {
-    if (!file || !studentToEdit) return;
+    if (!canManage || !file || !studentToEdit) return;
     try {
       const dataUrl = await processAvatarImageFile(file);
       setStudentToEdit({ ...studentToEdit, avatar: dataUrl });
@@ -585,12 +595,13 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     student: Student,
     updates: { teamId?: number; roleInClass?: string }
   ) => {
+    if (!isGVCN) {
+      showNotice('warning', 'Chỉ Giáo viên chủ nhiệm (GVCN) mới có quyền thay đổi Tổ và chức danh Cán sự lớp.');
+      return;
+    }
     onUpdateState((prev) => {
       const nextState = applyStudentTeamOrRoleUpdate(
-        {
-          ...prev,
-          currentUser: ensureTeacherAccount(prev),
-        },
+        prev,
         student.id,
         updates
       );
@@ -604,6 +615,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   };
 
   const handleSaveStudent = () => {
+    if (!canManage) return;
     if (!studentToEdit || !studentToEdit.fullName?.trim()) return;
 
     const studentWithConductFlag: Student = {
@@ -629,7 +641,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       const updatedCurrentUser =
         prev.currentUser?.studentId === normalized.id
           ? { ...prev.currentUser, avatar: normalized.avatar, name: normalized.fullName }
-          : ensureTeacherAccount(prev);
+          : prev.currentUser;
       return {
         ...prev,
         currentUser: updatedCurrentUser,
@@ -648,11 +660,15 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   };
 
   const handleDeleteStudent = (id: string, name: string, code: string = '') => {
+    if (!isGVCN) {
+      showNotice('warning', 'Chỉ tài khoản Giáo viên chủ nhiệm (GVCN) mới có quyền xóa hồ sơ học sinh.');
+      return;
+    }
     setStudentToDelete({ id, name, code });
   };
 
   const handleConfirmDeleteSingle = () => {
-    if (!studentToDelete) return;
+    if (!isGVCN || !studentToDelete) return;
     const { id, name } = studentToDelete;
     onUpdateState((prev) => {
       const remainingStudents = prev.students.filter((s) => s.id !== id);
@@ -662,7 +678,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       });
       return {
         ...prev,
-        currentUser: ensureTeacherAccount(prev),
         students: remainingStudents,
         userAccounts: syncedCadres.userAccounts,
         rolePermissions: syncedCadres.rolePermissions,
@@ -676,6 +691,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   };
 
   const handleOpenDeleteAll = () => {
+    if (!isGVCN) {
+      showNotice('warning', 'Chỉ tài khoản Giáo viên chủ nhiệm (GVCN) mới có quyền xóa toàn bộ hồ sơ.');
+      return;
+    }
     if (students.length === 0) {
       showNotice('info', 'Danh sách hồ sơ học sinh hiện đã trống (0 học sinh).');
       return;
@@ -684,6 +703,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   };
 
   const handleConfirmDeleteAll = () => {
+    if (!isGVCN) return;
     const count = students.length;
     onUpdateState((prev) => {
       const syncedCadres = syncUserAccountsWithStudents({
@@ -692,7 +712,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       });
       return {
         ...prev,
-        currentUser: ensureTeacherAccount(prev),
         students: [],
         userAccounts: syncedCadres.userAccounts,
         rolePermissions: syncedCadres.rolePermissions,
@@ -704,6 +723,10 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   };
 
   const handleRestoreSampleStudents = () => {
+    if (!isGVCN) {
+      showNotice('warning', 'Chỉ tài khoản Giáo viên chủ nhiệm (GVCN) mới có quyền khôi phục danh sách mẫu.');
+      return;
+    }
     onUpdateState((prev) => {
       const restoredStudents = initialStudents.map(normalizeStudentTT22);
       const syncedCadres = syncUserAccountsWithStudents({
@@ -712,7 +735,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       });
       return {
         ...prev,
-        currentUser: ensureTeacherAccount(prev),
         students: restoredStudents,
         userAccounts: syncedCadres.userAccounts,
         rolePermissions: syncedCadres.rolePermissions,
@@ -791,6 +813,23 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
         </div>
       )}
 
+      {/* Read-only / Permission Banner */}
+      {!canManage && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-center justify-between gap-3 text-xs text-amber-900">
+          <div className="flex items-center gap-2.5">
+            <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              {readOnly
+                ? 'Bạn đang ở Chế độ Chỉ xem. Không thể thêm, chỉnh sửa hoặc xóa hồ sơ học sinh.'
+                : `Tài khoản ${appState.currentUser?.roleTitle || 'hiện tại'} chưa được GVCN phân quyền chỉnh sửa hồ sơ học sinh.`}
+            </span>
+          </div>
+          <span className="px-2.5 py-1 rounded-lg bg-white border border-amber-200 font-bold text-[11px] text-amber-800 shrink-0">
+            Chỉ xem
+          </span>
+        </div>
+      )}
+
       {/* Top action toolbar */}
       <div className="bg-white rounded-2xl p-4 lg:p-5 border border-[#D8E7FA] shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
@@ -854,14 +893,16 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           </select>
 
           {/* Batch Evaluate TT22 Button */}
-          <button
-            onClick={handleBatchEvaluateTT22}
-            title="Đồng bộ tính toán xếp loại cả lớp theo Thông tư 22"
-            className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1677E8] border border-blue-200 text-xs font-bold flex items-center gap-1.5 transition-colors"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[#1677E8]" />
-            <span>Xếp loại TT22</span>
-          </button>
+          {canManage && (
+            <button
+              onClick={handleBatchEvaluateTT22}
+              title="Đồng bộ tính toán xếp loại cả lớp theo Thông tư 22"
+              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1677E8] border border-blue-200 text-xs font-bold flex items-center gap-1.5 transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#1677E8]" />
+              <span>Xếp loại TT22</span>
+            </button>
+          )}
 
           {/* Export button */}
           <button
@@ -873,48 +914,54 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           </button>
 
           {/* Add students from Excel button */}
-          <button
-            onClick={() => {
-              setIsExcelImportOpen(true);
-              setImportedPreview([]);
-              setImportFileName('');
-              setPasteContent('');
-              setImportError(null);
-            }}
-            className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 transition-all"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            Thêm bằng file Excel
-          </button>
+          {canManage && (
+            <button
+              onClick={() => {
+                setIsExcelImportOpen(true);
+                setImportedPreview([]);
+                setImportFileName('');
+                setPasteContent('');
+                setImportError(null);
+              }}
+              className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 transition-all"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Thêm bằng file Excel
+            </button>
+          )}
 
           {/* Add student button */}
-          <button
-            onClick={handleOpenAdd}
-            className="px-3.5 py-2 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-blue-500/20 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Thêm học sinh
-          </button>
+          {canManage && (
+            <button
+              onClick={handleOpenAdd}
+              className="px-3.5 py-2 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-blue-500/20 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              Thêm học sinh
+            </button>
+          )}
 
-          {/* Delete All Student Profiles button */}
-          {students.length > 0 ? (
-            <button
-              onClick={handleOpenDeleteAll}
-              title="Xóa tất cả danh sách hồ sơ học sinh trong lớp"
-              className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-red-600/20 transition-all"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>Xóa tất cả ({students.length})</span>
-            </button>
-          ) : (
-            <button
-              onClick={handleRestoreSampleStudents}
-              title="Khôi phục danh sách 38 học sinh mẫu lớp 9A2"
-              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Khôi phục DS mẫu (38 HS)</span>
-            </button>
+          {/* Delete All Student Profiles button (GVCN only) */}
+          {isGVCN && (
+            students.length > 0 ? (
+              <button
+                onClick={handleOpenDeleteAll}
+                title="Xóa tất cả danh sách hồ sơ học sinh trong lớp"
+                className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-red-600/20 transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Xóa tất cả ({students.length})</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleRestoreSampleStudents}
+                title="Khôi phục danh sách học sinh mẫu lớp 9A2"
+                className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Khôi phục DS mẫu</span>
+              </button>
+            )
           )}
         </div>
       </div>
@@ -954,34 +1001,40 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                       <p className="text-xs text-[#66809F]">
                         Thầy/cô có thể thêm học sinh mới thủ công, tải danh sách từ tệp Excel hoặc khôi phục danh sách mẫu lớp 9A2.
                       </p>
-                      <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                        <button
-                          onClick={handleOpenAdd}
-                          className="px-3.5 py-2 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          Thêm học sinh mới
-                        </button>
-                        <button
-                          onClick={() => {
-                            setIsExcelImportOpen(true);
-                            setImportedPreview([]);
-                            setImportFileName('');
-                            setPasteContent('');
-                            setImportError(null);
-                          }}
-                          className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs"
-                        >
-                          <FileSpreadsheet className="w-3.5 h-3.5" />
-                          Thêm bằng file Excel
-                        </button>
-                        <button
-                          onClick={handleRestoreSampleStudents}
-                          className="px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold flex items-center gap-1.5"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          Khôi phục DS mẫu (38 HS)
-                        </button>
+                      <div className="flex items-center justify-center gap-2 pt-2">
+                        {canManage && (
+                          <>
+                            <button
+                              onClick={handleOpenAdd}
+                              className="px-3.5 py-2 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              Thêm học sinh mới
+                            </button>
+                            <button
+                              onClick={() => {
+                                setIsExcelImportOpen(true);
+                                setImportedPreview([]);
+                                setImportFileName('');
+                                setPasteContent('');
+                                setImportError(null);
+                              }}
+                              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs"
+                            >
+                              <FileSpreadsheet className="w-3.5 h-3.5" />
+                              Thêm bằng file Excel
+                            </button>
+                          </>
+                        )}
+                        {isGVCN && (
+                          <button
+                            onClick={handleRestoreSampleStudents}
+                            className="px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold flex items-center gap-1.5"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            Khôi phục DS mẫu
+                          </button>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -1002,31 +1055,40 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                     <td className="py-3 px-3.5 font-mono text-[#0B438A] font-semibold">{s.code}</td>
                     <td className="py-3 px-3.5">
                       <div className="flex items-center gap-2.5">
-                        <label
-                          onClick={(e) => e.stopPropagation()}
-                          title="Nhấn để tải ảnh đại diện mới cho học sinh"
-                          className="relative group/avatar cursor-pointer shrink-0"
-                        >
+                        {canManage ? (
+                          <label
+                            onClick={(e) => e.stopPropagation()}
+                            title="Nhấn để tải ảnh đại diện mới cho học sinh"
+                            className="relative group/avatar cursor-pointer shrink-0"
+                          >
+                            <img
+                              src={s.avatar}
+                              alt={s.fullName}
+                              referrerPolicy="no-referrer"
+                              className="w-8 h-8 rounded-full object-cover border border-blue-200"
+                            />
+                            <span className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center text-white transition-opacity">
+                              <Camera className="w-3.5 h-3.5" />
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleDirectStudentAvatarUpload(s.id, file);
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
+                        ) : (
                           <img
                             src={s.avatar}
                             alt={s.fullName}
                             referrerPolicy="no-referrer"
-                            className="w-8 h-8 rounded-full object-cover border border-blue-200"
+                            className="w-8 h-8 rounded-full object-cover border border-blue-200 shrink-0"
                           />
-                          <span className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center text-white transition-opacity">
-                            <Camera className="w-3.5 h-3.5" />
-                          </span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handleDirectStudentAvatarUpload(s.id, file);
-                              e.target.value = '';
-                            }}
-                          />
-                        </label>
+                        )}
                         <span
                           onClick={() => setActiveStudent(s)}
                           className="font-bold text-[#17365D] group-hover:text-[#1677E8] cursor-pointer"
@@ -1038,49 +1100,67 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                     <td className="py-3 px-3.5 text-[#66809F] font-mono">{s.dateOfBirth}</td>
                     <td className="py-3 px-3.5 text-[#66809F]">{s.gender}</td>
                     <td className="py-3 px-3.5">
-                      <select
-                        value={s.teamId}
-                        onChange={(e) =>
-                          handleInlineTeamOrRoleChange(s, { teamId: Number(e.target.value) })
-                        }
-                        title="Nhấn để đổi Tổ cho học sinh"
-                        className="px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#0B438A] font-bold text-[11px] border border-blue-200/80 cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-[#1677E8]"
-                      >
-                        <option value={1}>Tổ 1</option>
-                        <option value={2}>Tổ 2</option>
-                        <option value={3}>Tổ 3</option>
-                        <option value={4}>Tổ 4</option>
-                      </select>
+                      {isGVCN ? (
+                        <select
+                          value={s.teamId}
+                          onChange={(e) =>
+                            handleInlineTeamOrRoleChange(s, { teamId: Number(e.target.value) })
+                          }
+                          title="Nhấn để đổi Tổ cho học sinh"
+                          className="px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#0B438A] font-bold text-[11px] border border-blue-200/80 cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-[#1677E8]"
+                        >
+                          <option value={1}>Tổ 1</option>
+                          <option value={2}>Tổ 2</option>
+                          <option value={3}>Tổ 3</option>
+                          <option value={4}>Tổ 4</option>
+                        </select>
+                      ) : (
+                        <span className="px-2 py-1 rounded-lg bg-blue-50 text-[#0B438A] font-bold text-[11px] border border-blue-200/80 inline-block">
+                          Tổ {s.teamId}
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-3.5">
-                      <select
-                        value={
-                          STANDARD_CLASS_ROLES.includes(s.roleInClass)
-                            ? s.roleInClass
-                            : isRegularMemberRole(s.roleInClass)
-                            ? 'Thành viên'
-                            : s.roleInClass
-                        }
-                        onChange={(e) =>
-                          handleInlineTeamOrRoleChange(s, { roleInClass: e.target.value })
-                        }
-                        title="Nhấn để đổi chức danh cán sự lớp / tổ"
-                        className={`px-2 py-1 rounded-lg text-[11px] font-bold border cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-[#1677E8] ${
-                          !isRegularMemberRole(s.roleInClass)
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                            : 'bg-gray-50 text-[#66809F] border-gray-200 hover:bg-gray-100'
-                        }`}
-                      >
-                        {!STANDARD_CLASS_ROLES.includes(s.roleInClass) &&
-                          !isRegularMemberRole(s.roleInClass) && (
-                            <option value={s.roleInClass}>{s.roleInClass}</option>
-                          )}
-                        {STANDARD_CLASS_ROLES.map((roleOpt) => (
-                          <option key={roleOpt} value={roleOpt}>
-                            {roleOpt}
-                          </option>
-                        ))}
-                      </select>
+                      {isGVCN ? (
+                        <select
+                          value={
+                            STANDARD_CLASS_ROLES.includes(s.roleInClass)
+                              ? s.roleInClass
+                              : isRegularMemberRole(s.roleInClass)
+                              ? 'Thành viên'
+                              : s.roleInClass
+                          }
+                          onChange={(e) =>
+                            handleInlineTeamOrRoleChange(s, { roleInClass: e.target.value })
+                          }
+                          title="Nhấn để đổi chức danh cán sự lớp / tổ"
+                          className={`px-2 py-1 rounded-lg text-[11px] font-bold border cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-[#1677E8] ${
+                            !isRegularMemberRole(s.roleInClass)
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                              : 'bg-gray-50 text-[#66809F] border-gray-200 hover:bg-gray-100'
+                          }`}
+                        >
+                          {!STANDARD_CLASS_ROLES.includes(s.roleInClass) &&
+                            !isRegularMemberRole(s.roleInClass) && (
+                              <option value={s.roleInClass}>{s.roleInClass}</option>
+                            )}
+                          {STANDARD_CLASS_ROLES.map((roleOpt) => (
+                            <option key={roleOpt} value={roleOpt}>
+                              {roleOpt}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span
+                          className={`px-2 py-1 rounded-lg text-[11px] font-bold border inline-block ${
+                            !isRegularMemberRole(s.roleInClass)
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                              : 'bg-gray-50 text-[#66809F] border-gray-200'
+                          }`}
+                        >
+                          {s.roleInClass}
+                        </span>
+                      )}
                     </td>
                     
                     {/* Học lực TT22 */}
@@ -1147,20 +1227,24 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         >
                           <UserCheck className="w-3.5 h-3.5" />
                         </button>
-                        <button
-                          onClick={() => handleOpenEdit(s)}
-                          title="Chỉnh sửa thông tin"
-                          className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteStudent(s.id, s.fullName, s.code)}
-                          title="Xóa hồ sơ học sinh"
-                          className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {canManage && (
+                          <button
+                            onClick={() => handleOpenEdit(s)}
+                            title="Chỉnh sửa thông tin"
+                            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {isGVCN && (
+                          <button
+                            onClick={() => handleDeleteStudent(s.id, s.fullName, s.code)}
+                            title="Xóa hồ sơ học sinh"
+                            className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -1178,33 +1262,42 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             {/* Modal Header */}
             <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50/50 to-white">
               <div className="flex items-center gap-3.5">
-                <label
-                  title="Tải ảnh đại diện học sinh từ máy tính"
-                  className="relative group/detailavatar cursor-pointer shrink-0"
-                >
+                {canManage ? (
+                  <label
+                    title="Tải ảnh đại diện học sinh từ máy tính"
+                    className="relative group/detailavatar cursor-pointer shrink-0"
+                  >
+                    <img
+                      src={activeStudent.avatar}
+                      alt={activeStudent.fullName}
+                      referrerPolicy="no-referrer"
+                      className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-sm"
+                    />
+                    <span className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/detailavatar:opacity-100 flex items-center justify-center text-white transition-opacity">
+                      <Camera className="w-4 h-4" />
+                    </span>
+                    <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-[#1677E8] text-white flex items-center justify-center shadow-xs border border-white">
+                      <Camera className="w-3 h-3" />
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleDirectStudentAvatarUpload(activeStudent.id, file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                ) : (
                   <img
                     src={activeStudent.avatar}
                     alt={activeStudent.fullName}
                     referrerPolicy="no-referrer"
-                    className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-sm"
+                    className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-sm shrink-0"
                   />
-                  <span className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/detailavatar:opacity-100 flex items-center justify-center text-white transition-opacity">
-                    <Camera className="w-4 h-4" />
-                  </span>
-                  <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-[#1677E8] text-white flex items-center justify-center shadow-xs border border-white">
-                    <Camera className="w-3 h-3" />
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleDirectStudentAvatarUpload(activeStudent.id, file);
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
+                )}
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-base font-extrabold text-[#17365D]">
@@ -1213,20 +1306,22 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                     <span className="text-xs font-mono font-bold text-[#1677E8] bg-blue-50 px-2 py-0.5 rounded-md">
                       {activeStudent.code}
                     </span>
-                    <label className="text-[11px] font-bold text-[#1677E8] hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-lg cursor-pointer inline-flex items-center gap-1 transition-colors">
-                      <Upload className="w-3 h-3" />
-                      <span>Đổi ảnh đại diện</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleDirectStudentAvatarUpload(activeStudent.id, file);
-                          e.target.value = '';
-                        }}
-                      />
-                    </label>
+                    {canManage && (
+                      <label className="text-[11px] font-bold text-[#1677E8] hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-lg cursor-pointer inline-flex items-center gap-1 transition-colors">
+                        <Upload className="w-3 h-3" />
+                        <span>Đổi ảnh đại diện</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleDirectStudentAvatarUpload(activeStudent.id, file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    )}
                   </div>
                   <p className="text-xs text-[#66809F] mt-0.5">
                     Tổ {activeStudent.teamId} • {activeStudent.roleInClass} • Ngày sinh: {activeStudent.dateOfBirth}
@@ -1595,13 +1690,15 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
 
             {/* Modal Footer */}
             <div className="p-4 border-t border-gray-100 flex items-center justify-end gap-2 bg-gray-50/50">
-              <button
-                onClick={() => handleOpenEdit(activeStudent)}
-                className="px-4 py-2 rounded-xl bg-blue-50 text-[#1677E8] hover:bg-blue-100 font-bold text-xs flex items-center gap-1.5 transition-colors"
-              >
-                <Edit className="w-3.5 h-3.5" />
-                Sửa hồ sơ
-              </button>
+              {canManage && (
+                <button
+                  onClick={() => handleOpenEdit(activeStudent)}
+                  className="px-4 py-2 rounded-xl bg-blue-50 text-[#1677E8] hover:bg-blue-100 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  Sửa hồ sơ
+                </button>
+              )}
               <button
                 onClick={() => setActiveStudent(null)}
                 className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 font-bold text-xs text-[#17365D]"
@@ -1743,11 +1840,12 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="font-semibold text-[#17365D] block mb-1">Thuộc Tổ</label>
+                  <label className="font-semibold text-[#17365D] block mb-1">Thuộc Tổ {!isGVCN && '(Chỉ GVCN đổi)'}</label>
                   <select
                     value={studentToEdit.teamId || 1}
+                    disabled={!isGVCN}
                     onChange={(e) => setStudentToEdit({ ...studentToEdit, teamId: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs disabled:bg-gray-100 disabled:text-gray-500"
                   >
                     <option value={1}>Tổ 1</option>
                     <option value={2}>Tổ 2</option>
@@ -1756,7 +1854,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="font-semibold text-[#17365D] block mb-1">Chức vụ / Chức danh cán sự lớp</label>
+                  <label className="font-semibold text-[#17365D] block mb-1">Chức vụ / Chức danh cán sự lớp {!isGVCN && '(Chỉ GVCN đổi)'}</label>
                   <div className="space-y-1.5">
                     <select
                       value={
@@ -1766,6 +1864,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                           ? 'Thành viên'
                           : '__custom__'
                       }
+                      disabled={!isGVCN}
                       onChange={(e) => {
                         if (e.target.value === '__custom__') {
                           setStudentToEdit({ ...studentToEdit, roleInClass: 'Cán sự lớp' });
@@ -1773,7 +1872,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                           setStudentToEdit({ ...studentToEdit, roleInClass: e.target.value });
                         }
                       }}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-semibold text-[#17365D]"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white font-semibold text-[#17365D] disabled:bg-gray-100 disabled:text-gray-500"
                     >
                       {STANDARD_CLASS_ROLES.map((roleOpt) => (
                         <option key={roleOpt} value={roleOpt}>
@@ -1786,12 +1885,13 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                       !isRegularMemberRole(studentToEdit.roleInClass)) && (
                       <input
                         type="text"
+                        disabled={!isGVCN}
                         value={studentToEdit.roleInClass || ''}
                         onChange={(e) =>
                           setStudentToEdit({ ...studentToEdit, roleInClass: e.target.value })
                         }
                         placeholder="Nhập chức danh cán sự..."
-                        className="w-full px-3 py-2 rounded-xl border border-blue-300 text-xs focus:ring-2 focus:ring-[#1677E8]"
+                        className="w-full px-3 py-2 rounded-xl border border-blue-300 text-xs focus:ring-2 focus:ring-[#1677E8] disabled:bg-gray-100"
                       />
                     )}
                   </div>

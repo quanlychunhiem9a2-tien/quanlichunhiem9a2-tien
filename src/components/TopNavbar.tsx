@@ -116,68 +116,86 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
 
         {/* Right Controls */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Class Selector Dropdown */}
+          {/* Class Selector Dropdown (GVCN can change, others view-only) */}
           <div className="relative">
-            <button
-              onClick={() => {
-                setShowClassDropdown(!showClassDropdown);
-                setShowYearDropdown(false);
-              }}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#F0F6FE] hover:bg-[#E2EFFF] border border-[#CDE1FA] text-[#0B438A] text-xs font-semibold transition-colors"
-            >
-              <Briefcase className="w-3.5 h-3.5 text-[#1677E8]" />
-              <span className="whitespace-nowrap">{appState.className}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-[#66809F]" />
-            </button>
+            {isTeacher(appState) ? (
+              <>
+                <button
+                  onClick={() => {
+                    setShowClassDropdown(!showClassDropdown);
+                    setShowYearDropdown(false);
+                  }}
+                  className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#F0F6FE] hover:bg-[#E2EFFF] border border-[#CDE1FA] text-[#0B438A] text-xs font-semibold transition-colors"
+                >
+                  <Briefcase className="w-3.5 h-3.5 text-[#1677E8]" />
+                  <span className="whitespace-nowrap">{appState.className}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-[#66809F]" />
+                </button>
 
-            {showClassDropdown && (
-              <div className="absolute right-0 mt-1.5 w-36 bg-white rounded-xl shadow-lg border border-[#D8E7FA] py-1 z-50 text-xs">
-                {classOptions.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => {
-                      onUpdateState((prev) => ({ ...prev, className: c }));
-                      setShowClassDropdown(false);
-                    }}
-                    className="w-full px-3 py-2 text-left hover:bg-blue-50 flex items-center justify-between text-[#17365D]"
-                  >
-                    <span className={c === appState.className ? 'font-bold text-[#1677E8]' : ''}>{c}</span>
-                    {c === appState.className && <Check className="w-3.5 h-3.5 text-[#1677E8]" />}
-                  </button>
-                ))}
+                {showClassDropdown && (
+                  <div className="absolute right-0 mt-1.5 w-36 bg-white rounded-xl shadow-lg border border-[#D8E7FA] py-1 z-50 text-xs">
+                    {classOptions.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => {
+                          onUpdateState((prev) => ({ ...prev, className: c }));
+                          setShowClassDropdown(false);
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-blue-50 flex items-center justify-between text-[#17365D]"
+                      >
+                        <span className={c === appState.className ? 'font-bold text-[#1677E8]' : ''}>{c}</span>
+                        {c === appState.className && <Check className="w-3.5 h-3.5 text-[#1677E8]" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#F0F6FE] border border-[#CDE1FA] text-[#0B438A] text-xs font-semibold">
+                <Briefcase className="w-3.5 h-3.5 text-[#1677E8]" />
+                <span className="whitespace-nowrap">{appState.className}</span>
               </div>
             )}
           </div>
 
-          {/* Academic Year Selector */}
+          {/* Academic Year Selector (GVCN can change, others view-only) */}
           <div className="relative hidden md:block">
-            <button
-              onClick={() => {
-                setShowYearDropdown(!showYearDropdown);
-                setShowClassDropdown(false);
-              }}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#F0F6FE] hover:bg-[#E2EFFF] border border-[#CDE1FA] text-[#0B438A] text-xs font-semibold transition-colors"
-            >
-              <Calendar className="w-3.5 h-3.5 text-[#1677E8]" />
-              <span className="whitespace-nowrap">{appState.academicYear}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-[#66809F]" />
-            </button>
+            {isTeacher(appState) ? (
+              <>
+                <button
+                  onClick={() => {
+                    setShowYearDropdown(!showYearDropdown);
+                    setShowClassDropdown(false);
+                  }}
+                  className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#F0F6FE] hover:bg-[#E2EFFF] border border-[#CDE1FA] text-[#0B438A] text-xs font-semibold transition-colors"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-[#1677E8]" />
+                  <span className="whitespace-nowrap">{appState.academicYear}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-[#66809F]" />
+                </button>
 
-            {showYearDropdown && (
-              <div className="absolute right-0 mt-1.5 w-48 bg-white rounded-xl shadow-lg border border-[#D8E7FA] py-1 z-50 text-xs">
-                {yearOptions.map((y) => (
-                  <button
-                    key={y}
-                    onClick={() => {
-                      onUpdateState((prev) => ({ ...prev, academicYear: y }));
-                      setShowYearDropdown(false);
-                    }}
-                    className="w-full px-3 py-2 text-left hover:bg-blue-50 flex items-center justify-between text-[#17365D]"
-                  >
-                    <span className={y === appState.academicYear ? 'font-bold text-[#1677E8]' : ''}>{y}</span>
-                    {y === appState.academicYear && <Check className="w-3.5 h-3.5 text-[#1677E8]" />}
-                  </button>
-                ))}
+                {showYearDropdown && (
+                  <div className="absolute right-0 mt-1.5 w-48 bg-white rounded-xl shadow-lg border border-[#D8E7FA] py-1 z-50 text-xs">
+                    {yearOptions.map((y) => (
+                      <button
+                        key={y}
+                        onClick={() => {
+                          onUpdateState((prev) => ({ ...prev, academicYear: y }));
+                          setShowYearDropdown(false);
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-blue-50 flex items-center justify-between text-[#17365D]"
+                      >
+                        <span className={y === appState.academicYear ? 'font-bold text-[#1677E8]' : ''}>{y}</span>
+                        {y === appState.academicYear && <Check className="w-3.5 h-3.5 text-[#1677E8]" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#F0F6FE] border border-[#CDE1FA] text-[#0B438A] text-xs font-semibold">
+                <Calendar className="w-3.5 h-3.5 text-[#1677E8]" />
+                <span className="whitespace-nowrap">{appState.academicYear}</span>
               </div>
             )}
           </div>

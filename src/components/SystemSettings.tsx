@@ -896,23 +896,30 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowAddModal(true)}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-xs flex items-center gap-1.5 transition-colors"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  + Thêm vai trò
-                </button>
+              {isGVCN ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    + Thêm vai trò
+                  </button>
 
-                <button
-                  onClick={handleResetPermissionsToDefault}
-                  className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#17365D] font-bold text-xs flex items-center gap-1.5 transition-colors"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 text-gray-500" />
-                  Khôi phục chuẩn
-                </button>
-              </div>
+                  <button
+                    onClick={handleResetPermissionsToDefault}
+                    className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#17365D] font-bold text-xs flex items-center gap-1.5 transition-colors"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-gray-500" />
+                    Khôi phục chuẩn
+                  </button>
+                </div>
+              ) : (
+                <span className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 font-bold text-xs flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-amber-600" />
+                  Chỉ GVCN mới có quyền chỉnh sửa bảng phân quyền
+                </span>
+              )}
             </div>
 
             <div className="overflow-x-auto">
@@ -943,30 +950,39 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                         {/* Member & Role */}
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2.5">
-                            <label
-                              title="Nhấn để tải ảnh đại diện mới"
-                              className="relative group/accavatar cursor-pointer shrink-0"
-                            >
+                            {isGVCN || (isSelf && currentUser.role !== 'guest') ? (
+                              <label
+                                title="Nhấn để tải ảnh đại diện mới"
+                                className="relative group/accavatar cursor-pointer shrink-0"
+                              >
+                                <img
+                                  src={account.avatar}
+                                  alt=""
+                                  referrerPolicy="no-referrer"
+                                  className="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0"
+                                />
+                                <span className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/accavatar:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                  <Camera className="w-3.5 h-3.5" />
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleAccountAvatarUpload(account.id, file);
+                                    e.target.value = '';
+                                  }}
+                                />
+                              </label>
+                            ) : (
                               <img
                                 src={account.avatar}
                                 alt=""
                                 referrerPolicy="no-referrer"
                                 className="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0"
                               />
-                              <span className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/accavatar:opacity-100 flex items-center justify-center text-white transition-opacity">
-                                <Camera className="w-3.5 h-3.5" />
-                              </span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) handleAccountAvatarUpload(account.id, file);
-                                  e.target.value = '';
-                                }}
-                              />
-                            </label>
+                            )}
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5">
                                 <span className="font-extrabold text-[#17365D] block">
@@ -1058,6 +1074,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                           ) : (
                             <select
                               value={perms.attendanceScope}
+                              disabled={!isGVCN}
                               onChange={(e) =>
                                 handleUpdatePermission(
                                   account.role,
@@ -1065,7 +1082,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                                   e.target.value
                                 )
                               }
-                              className="px-2 py-1 rounded-lg border border-gray-200 text-xs bg-white font-medium text-[#17365D]"
+                              className="px-2 py-1 rounded-lg border border-gray-200 text-xs bg-white font-medium text-[#17365D] disabled:bg-gray-50 disabled:text-gray-500"
                             >
                               <option value="all">Toàn bộ lớp</option>
                               <option value="own_team">Chỉ Tổ {account.teamId || 'mình'}</option>
@@ -1083,6 +1100,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                           ) : (
                             <select
                               value={perms.emulationScope}
+                              disabled={!isGVCN}
                               onChange={(e) =>
                                 handleUpdatePermission(
                                   account.role,
@@ -1090,7 +1108,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                                   e.target.value
                                 )
                               }
-                              className="px-2 py-1 rounded-lg border border-gray-200 text-xs bg-white font-medium text-[#17365D]"
+                              className="px-2 py-1 rounded-lg border border-gray-200 text-xs bg-white font-medium text-[#17365D] disabled:bg-gray-50 disabled:text-gray-500"
                             >
                               <option value="all">Toàn bộ 4 tổ</option>
                               <option value="own_team">Chỉ Tổ {account.teamId || 'mình'}</option>
@@ -1107,9 +1125,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                             </span>
                           ) : (
                             <div className="space-y-1">
-                              <label className="flex items-center gap-1.5 cursor-pointer">
+                              <label className={`flex items-center gap-1.5 ${isGVCN ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'}`}>
                                 <input
                                   type="checkbox"
+                                  disabled={!isGVCN}
                                   checked={perms.canProposePlanTask}
                                   onChange={(e) =>
                                     handleUpdatePermission(
@@ -1122,9 +1141,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                                 />
                                 <span className="text-[11px] font-medium">Đề xuất việc tuần</span>
                               </label>
-                              <label className="flex items-center gap-1.5 cursor-pointer">
+                              <label className={`flex items-center gap-1.5 ${isGVCN ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'}`}>
                                 <input
                                   type="checkbox"
+                                  disabled={!isGVCN}
                                   checked={perms.canToggleTasks}
                                   onChange={(e) =>
                                     handleUpdatePermission(
@@ -1169,61 +1189,68 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
 
                         {/* Actions: Test Role, Edit, Delete */}
                         <td className="py-3 px-3 text-right pr-4">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {/* Switch Role Button */}
-                            {isSelf ? (
-                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg">
-                                Đang dùng
-                              </span>
-                            ) : (
+                          {isGVCN ? (
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* Switch Role Button */}
+                              {isSelf ? (
+                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg">
+                                  Đang dùng
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => handleSwitchRole(account)}
+                                  title="Chuyển sang vai trò này để kiểm tra phân quyền"
+                                  className="px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#1677E8] font-bold text-[11px] transition-colors"
+                                >
+                                  Thử vai trò
+                                </button>
+                              )}
+
+                              {/* Manage Password Button */}
                               <button
-                                onClick={() => handleSwitchRole(account)}
-                                title="Chuyển sang vai trò này để kiểm tra phân quyền"
-                                className="px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#1677E8] font-bold text-[11px] transition-colors"
+                                onClick={() => {
+                                  setAccountToManagePassword(account);
+                                  setManagedNewPassword(account.password || '123456');
+                                }}
+                                title="Xem / Đổi mật khẩu đăng nhập cho tài khoản này"
+                                className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 transition-colors"
                               >
-                                Thử vai trò
+                                <KeyRound className="w-3.5 h-3.5" />
                               </button>
-                            )}
 
-                            {/* Manage Password Button */}
-                            <button
-                              onClick={() => {
-                                setAccountToManagePassword(account);
-                                setManagedNewPassword(account.password || '123456');
-                              }}
-                              title="Xem / Đổi mật khẩu đăng nhập cho tài khoản này"
-                              className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 transition-colors"
-                            >
-                              <KeyRound className="w-3.5 h-3.5" />
-                            </button>
-
-                            {/* Edit Detailed Permissions Button */}
-                            <button
-                              onClick={() => setEditingAccount(account)}
-                              title="Tùy chỉnh chi tiết 13 mục phân quyền"
-                              className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-[#17365D] transition-colors"
-                            >
-                              <SlidersHorizontal className="w-3.5 h-3.5" />
-                            </button>
-
-                            {/* Delete Role Button */}
-                            {isTeacher ? (
-                              <span
-                                title="Tài khoản GVCN Quản trị viên tối cao không thể xóa"
-                                className="p-1.5 rounded-lg text-gray-300 cursor-not-allowed"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </span>
-                            ) : (
+                              {/* Edit Detailed Permissions Button */}
                               <button
-                                onClick={() => setAccountToDelete(account)}
-                                title="Xóa vai trò phân quyền này"
-                                className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
+                                onClick={() => setEditingAccount(account)}
+                                title="Tùy chỉnh chi tiết 13 mục phân quyền"
+                                className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-[#17365D] transition-colors"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <SlidersHorizontal className="w-3.5 h-3.5" />
                               </button>
-                            )}
-                          </div>
+
+                              {/* Delete Role Button */}
+                              {isTeacher ? (
+                                <span
+                                  title="Tài khoản GVCN Quản trị viên tối cao không thể xóa"
+                                  className="p-1.5 rounded-lg text-gray-300 cursor-not-allowed"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => setAccountToDelete(account)}
+                                  title="Xóa vai trò phân quyền này"
+                                  className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-100 text-gray-500 font-semibold text-[11px]">
+                              <Lock className="w-3 h-3" />
+                              {isSelf ? 'Đang dùng' : 'Chỉ GVCN'}
+                            </span>
+                          )}
                         </td>
                       </tr>
                     );
@@ -1333,9 +1360,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                 <label className="font-semibold text-[#17365D] block mb-1">Tên đơn vị / Trường học:</label>
                 <input
                   type="text"
+                  disabled={!isGVCN}
                   value={formData.schoolName}
                   onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 font-semibold"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 font-semibold disabled:bg-gray-100 disabled:text-gray-500"
                 />
               </div>
 
@@ -1343,9 +1371,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                 <label className="font-semibold text-[#17365D] block mb-1">Khẩu hiệu / Phương châm giáo dục:</label>
                 <input
                   type="text"
+                  disabled={!isGVCN}
                   value={formData.slogan}
                   onChange={(e) => setFormData({ ...formData, slogan: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 disabled:bg-gray-100 disabled:text-gray-500"
                 />
               </div>
 
@@ -1354,9 +1383,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                   <label className="font-semibold text-[#17365D] block mb-1">Lớp chủ nhiệm:</label>
                   <input
                     type="text"
+                    disabled={!isGVCN}
                     value={formData.className}
                     onChange={(e) => setFormData({ ...formData, className: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 font-bold text-[#0B438A]"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 font-bold text-[#0B438A] disabled:bg-gray-100"
                   />
                 </div>
 
@@ -1364,9 +1394,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                   <label className="font-semibold text-[#17365D] block mb-1">Năm học:</label>
                   <input
                     type="text"
+                    disabled={!isGVCN}
                     value={formData.academicYear}
                     onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 font-bold"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 font-bold disabled:bg-gray-100"
                   />
                 </div>
               </div>
@@ -1383,77 +1414,94 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
             {/* Teacher Avatar Upload Card */}
             <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3.5">
-                <label
-                  title="Nhấn để tải ảnh đại diện Giáo viên chủ nhiệm"
-                  className="relative group/tavatar cursor-pointer shrink-0"
-                >
+                {isGVCN ? (
+                  <label
+                    title="Nhấn để tải ảnh đại diện Giáo viên chủ nhiệm"
+                    className="relative group/tavatar cursor-pointer shrink-0"
+                  >
+                    <img
+                      src={teacherAccount?.avatar || PRESET_TEACHER_AVATARS[0]}
+                      alt={formData.teacherName}
+                      referrerPolicy="no-referrer"
+                      className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-md bg-white"
+                    />
+                    <span className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/tavatar:opacity-100 flex items-center justify-center text-white transition-opacity">
+                      <Camera className="w-4 h-4" />
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file && teacherAccount) {
+                          handleAccountAvatarUpload(teacherAccount.id, file);
+                        }
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                ) : (
                   <img
                     src={teacherAccount?.avatar || PRESET_TEACHER_AVATARS[0]}
                     alt={formData.teacherName}
                     referrerPolicy="no-referrer"
-                    className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-md bg-white"
+                    className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-md bg-white shrink-0"
                   />
-                  <span className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/tavatar:opacity-100 flex items-center justify-center text-white transition-opacity">
-                    <Camera className="w-4 h-4" />
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file && teacherAccount) {
-                        handleAccountAvatarUpload(teacherAccount.id, file);
-                      }
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
+                )}
                 <div className="space-y-1">
                   <span className="font-extrabold text-[#17365D] block text-xs">
                     Ảnh đại diện Giáo viên (Avatar GVCN)
                   </span>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <label className="px-3 py-1.5 rounded-xl bg-[#1677E8] hover:bg-blue-700 text-white font-bold text-[11px] inline-flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors">
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Tải ảnh từ máy tính</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file && teacherAccount) {
-                            handleAccountAvatarUpload(teacherAccount.id, file);
-                          }
-                          e.target.value = '';
-                        }}
-                      />
-                    </label>
+                  {isGVCN ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="px-3 py-1.5 rounded-xl bg-[#1677E8] hover:bg-blue-700 text-white font-bold text-[11px] inline-flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Tải ảnh từ máy tính</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file && teacherAccount) {
+                              handleAccountAvatarUpload(teacherAccount.id, file);
+                            }
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                      <span className="text-[10.5px] text-[#66809F]">
+                        Tự động lưu & đồng bộ lên web
+                      </span>
+                    </div>
+                  ) : (
                     <span className="text-[10.5px] text-[#66809F]">
-                      Tự động lưu & đồng bộ lên web
+                      Chỉ GVCN mới có quyền thay đổi ảnh đại diện Giáo viên
                     </span>
-                  </div>
+                  )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                {PRESET_TEACHER_AVATARS.map((presetUrl, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleSetTeacherPresetAvatar(presetUrl)}
-                    title="Chọn mẫu avatar GVCN"
-                    className={`w-7 h-7 rounded-full overflow-hidden border-2 transition-transform hover:scale-110 ${
-                      teacherAccount?.avatar === presetUrl
-                        ? 'border-[#1677E8] ring-2 ring-blue-200'
-                        : 'border-white'
-                    }`}
-                  >
-                    <img src={presetUrl} alt="" className="w-full h-full object-cover bg-white" />
-                  </button>
-                ))}
-              </div>
+              {isGVCN && (
+                <div className="flex items-center gap-1.5">
+                  {PRESET_TEACHER_AVATARS.map((presetUrl, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSetTeacherPresetAvatar(presetUrl)}
+                      title="Chọn mẫu avatar GVCN"
+                      className={`w-7 h-7 rounded-full overflow-hidden border-2 transition-transform hover:scale-110 ${
+                        teacherAccount?.avatar === presetUrl
+                          ? 'border-[#1677E8] ring-2 ring-blue-200'
+                          : 'border-white'
+                      }`}
+                    >
+                      <img src={presetUrl} alt="" className="w-full h-full object-cover bg-white" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -1461,9 +1509,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                 <label className="font-semibold text-[#17365D] block mb-1">Họ và tên Giáo viên:</label>
                 <input
                   type="text"
+                  disabled={!isGVCN}
                   value={formData.teacherName}
                   onChange={(e) => setFormData({ ...formData, teacherName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 font-bold"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 font-bold disabled:bg-gray-100 disabled:text-gray-500"
                 />
               </div>
 
@@ -1471,9 +1520,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                 <label className="font-semibold text-[#17365D] block mb-1">Chức vụ / Vai trò:</label>
                 <input
                   type="text"
+                  disabled={!isGVCN}
                   value={formData.teacherRole}
                   onChange={(e) => setFormData({ ...formData, teacherRole: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 disabled:bg-gray-100 disabled:text-gray-500"
                 />
               </div>
 
@@ -1517,16 +1567,23 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                   Tải tệp sao lưu JSON
                 </button>
 
-                <label className="px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#17365D] font-bold flex items-center gap-2 cursor-pointer">
-                  <Upload className="w-4 h-4" />
-                  <span>Phục hồi từ JSON</span>
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={handleRestoreJSON}
-                    className="hidden"
-                  />
-                </label>
+                {isGVCN ? (
+                  <label className="px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#17365D] font-bold flex items-center gap-2 cursor-pointer">
+                    <Upload className="w-4 h-4" />
+                    <span>Phục hồi từ JSON</span>
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleRestoreJSON}
+                      className="hidden"
+                    />
+                  </label>
+                ) : (
+                  <span className="px-3.5 py-2.5 rounded-xl bg-gray-100 text-gray-400 font-bold flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5" />
+                    Phục hồi JSON (Chỉ GVCN)
+                  </span>
+                )}
               </div>
             </div>
 
@@ -1537,17 +1594,24 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
                 Khởi tạo lại & Bảo mật
               </h3>
               <p className="text-[#66809F]">
-                Khi bắt đầu lớp học thực tế hoặc muốn khôi phục về bộ dữ liệu mẫu chuẩn của lớp 9A2 (38 học sinh, sĩ số 34 có mặt).
+                Khi bắt đầu lớp học thực tế hoặc muốn khôi phục về bộ dữ liệu mẫu chuẩn của lớp 9A2.
               </p>
 
               <div className="pt-2">
-                <button
-                  onClick={handleConfirmReset}
-                  className="px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold flex items-center gap-2 transition-colors"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  Khởi tạo lại dữ liệu ban đầu
-                </button>
+                {isGVCN ? (
+                  <button
+                    onClick={handleConfirmReset}
+                    className="px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold flex items-center gap-2 transition-colors"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Khởi tạo lại dữ liệu ban đầu
+                  </button>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gray-100 text-gray-400 font-bold">
+                    <Lock className="w-3.5 h-3.5" />
+                    Khởi tạo lại dữ liệu (Chỉ GVCN)
+                  </span>
+                )}
               </div>
             </div>
           </div>

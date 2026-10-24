@@ -332,14 +332,12 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
   const canRecordAny = hasPermission(appState, 'canRecordEmulation');
   const readOnly = isReadOnly(appState);
 
-  const ensureAuthorizedUser = (prev: AppState) => {
-    if (hasPermission(prev, 'canRecordEmulation')) return prev.currentUser;
-    const teacherAcc = prev.userAccounts?.find((u) => u.role === 'teacher');
-    return teacherAcc || prev.currentUser;
-  };
-
   // Sync current week to latest real date
   const handleSyncLatestWeek = () => {
+    if (!isGVCN) {
+      showToast('Chỉ Giáo viên chủ nhiệm (GVCN) mới có quyền đồng bộ tuần hiện tại của hệ thống.');
+      return;
+    }
     const info = getCurrentSchoolWeekInfo();
     setSelectedWeek(info.currentWeek);
     onUpdateState((prev) => ({
@@ -353,6 +351,10 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
 
   // Set selectedWeek as currentEmulationWeek
   const handleSetAsCurrentWeek = (weekNum: number) => {
+    if (!isGVCN) {
+      showToast('Chỉ Giáo viên chủ nhiệm (GVCN) mới có quyền đặt tuần thi đua hiện tại.');
+      return;
+    }
     onUpdateState((prev) => ({
       ...prev,
       currentEmulationWeek: weekNum,
@@ -363,6 +365,10 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
 
   // Quick +/- points for a specific member in a team
   const handleQuickAdjustMemberPoints = (student: Student, delta: number, defaultCriteria: string) => {
+    if (!hasPermission(appState, 'canRecordEmulation', student.teamId)) {
+      showToast('Bạn không có quyền chấm điểm thi đua cho tổ này.');
+      return;
+    }
     const rec: EmulationRecord = {
       id: `emu-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       week: selectedWeek,
@@ -380,7 +386,6 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
 
     onUpdateState((prev) => ({
       ...prev,
-      currentUser: ensureAuthorizedUser(prev),
       emulationRecords: [rec, ...prev.emulationRecords],
     }));
 
@@ -391,6 +396,10 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
 
   // Open modal pre-filled for a specific student or team
   const handleOpenModalForMember = (teamId: number, studentName: string = '', type: 'plus' | 'minus' = 'plus') => {
+    if (!hasPermission(appState, 'canRecordEmulation', teamId)) {
+      showToast('Chế độ Chỉ xem hoặc chưa được cấp quyền chấm điểm thi đua cho tổ này.');
+      return;
+    }
     setNewRecord({
       week: selectedWeek,
       teamId,
@@ -410,12 +419,17 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
 
   // Handle Add Record from Modal
   const handleAddRecord = () => {
+    const targetTeamId = Number(newRecord.teamId) || 1;
+    if (!hasPermission(appState, 'canRecordEmulation', targetTeamId)) {
+      showToast('Bạn không có quyền ghi điểm thi đua cho tổ này.');
+      return;
+    }
     if (!newRecord.criteria) return;
     const rec: EmulationRecord = {
       id: `emu-${Date.now()}`,
       week: Number(newRecord.week) || selectedWeek,
       date: newRecord.date || latestWeekInfo.todayISO,
-      teamId: Number(newRecord.teamId) || 1,
+      teamId: targetTeamId,
       studentName: newRecord.studentName || undefined,
       type: newRecord.type as 'plus' | 'minus',
       points: (newRecord.type === 'plus' ? 1 : -1) * Math.abs(Number(newRecord.points) || 1),
@@ -426,7 +440,6 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
 
     onUpdateState((prev) => ({
       ...prev,
-      currentUser: ensureAuthorizedUser(prev),
       emulationRecords: [rec, ...prev.emulationRecords],
     }));
 
@@ -439,9 +452,13 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
   };
 
   const handleDeleteRecord = (id: string) => {
+    const targetRec = emulationRecords.find((r) => r.id === id);
+    if (!isGVCN && (!targetRec || !hasPermission(appState, 'canRecordEmulation', targetRec.teamId))) {
+      showToast('Bạn không có quyền xóa bản ghi điểm thi đua này.');
+      return;
+    }
     onUpdateState((prev) => ({
       ...prev,
-      currentUser: ensureAuthorizedUser(prev),
       emulationRecords: prev.emulationRecords.filter((r) => r.id !== id),
     }));
     showToast('Đã xóa bản ghi điểm thi đua.');
@@ -600,13 +617,15 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
             </button>
           </div>
 
-          <button
-            onClick={() => handleOpenModalForMember(isTeamLeader && userTeamId ? userTeamId : 1, '', 'plus')}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm bg-[#1677E8] hover:bg-[#0B438A] text-white shadow-blue-500/20 transition-all shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            {isTeamLeader ? `Ghi điểm Tổ ${userTeamId}` : 'Ghi điểm thi đua'}
-          </button>
+          {canRecordAny && (
+            <button
+              onClick={() => handleOpenModalForMember(isTeamLeader && userTeamId ? userTeamId : 1, '', 'plus')}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm bg-[#1677E8] hover:bg-[#0B438A] text-white shadow-blue-500/20 transition-all shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              {isTeamLeader ? `Ghi điểm Tổ ${userTeamId}` : 'Ghi điểm thi đua'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -669,7 +688,7 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
             <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 flex items-center gap-1">
               <span>● Tuần hiện tại</span>
             </span>
-          ) : (
+          ) : isGVCN ? (
             <button
               onClick={() => handleSetAsCurrentWeek(selectedWeek)}
               className="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition-colors"
@@ -677,19 +696,21 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
             >
               Đặt Tuần {selectedWeek} làm tuần hiện tại
             </button>
-          )}
+          ) : null}
         </div>
 
         {/* Quick jump buttons */}
         <div className="flex flex-wrap items-center gap-1.5 text-xs w-full xl:w-auto justify-end">
-          <button
-            onClick={handleSyncLatestWeek}
-            className="px-2.5 py-1.5 rounded-lg font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1 transition-colors"
-            title="Tự động tính số tuần hiện tại theo ngày tháng mới nhất hôm nay"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Cập nhật theo ngày mới nhất ({latestWeekInfo.todayVN})</span>
-          </button>
+          {isGVCN && (
+            <button
+              onClick={handleSyncLatestWeek}
+              className="px-2.5 py-1.5 rounded-lg font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1 transition-colors"
+              title="Tự động tính số tuần hiện tại theo ngày tháng mới nhất hôm nay"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Cập nhật theo ngày mới nhất ({latestWeekInfo.todayVN})</span>
+            </button>
+          )}
           <button
             onClick={() => setSelectedWeek(activeCurrentWeek)}
             className={`px-2.5 py-1.5 rounded-lg font-bold transition-colors ${
@@ -951,14 +972,16 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                           {team.points}/100đ <span className="text-gray-400 font-normal">|</span> {team.sumMemberScores}đ
                         </span>
                       </div>
-                      <button
-                        onClick={() => handleOpenModalForMember(team.teamId, '', 'plus')}
-                        className="px-2.5 py-1.5 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1 shadow-2xs transition-colors"
-                        title={`Ghi điểm thi đua cho ${team.teamName}`}
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Chấm điểm</span>
-                      </button>
+                      {hasPermission(appState, 'canRecordEmulation', team.teamId) && (
+                        <button
+                          onClick={() => handleOpenModalForMember(team.teamId, '', 'plus')}
+                          className="px-2.5 py-1.5 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1 shadow-2xs transition-colors"
+                          title={`Ghi điểm thi đua cho ${team.teamName}`}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Chấm điểm</span>
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -1128,41 +1151,47 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
 
                                 {/* Quick +/- Action Buttons */}
                                 <td className="py-2.5 px-3 text-right">
-                                  <div className="inline-flex items-center gap-1">
-                                    <button
-                                      onClick={() =>
-                                        handleQuickAdjustMemberPoints(
-                                          student,
-                                          2,
-                                          'Phát biểu xây dựng bài & thực hiện tốt nề nếp'
-                                        )
-                                      }
-                                      title={`Cộng nhanh +2 điểm cho ${student.fullName}`}
-                                      className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 font-mono font-bold text-[11px] transition-colors"
-                                    >
-                                      +2
-                                    </button>
-                                    <button
-                                      onClick={() =>
-                                        handleQuickAdjustMemberPoints(
-                                          student,
-                                          -2,
-                                          'Nhắc nhở nề nếp / tác phong trong tuần'
-                                        )
-                                      }
-                                      title={`Trừ nhanh -2 điểm đối với ${student.fullName}`}
-                                      className="px-2 py-1 rounded-lg bg-red-50 hover:bg-red-600 text-red-700 hover:text-white border border-red-200 font-mono font-bold text-[11px] transition-colors"
-                                    >
-                                      -2
-                                    </button>
-                                    <button
-                                      onClick={() => handleOpenModalForMember(team.teamId, student.fullName, 'plus')}
-                                      title="Ghi điểm chi tiết theo tiêu chí"
-                                      className="p-1 rounded-lg bg-gray-100 hover:bg-blue-100 text-[#17365D] hover:text-[#1677E8] transition-colors"
-                                    >
-                                      <Plus className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
+                                  {hasPermission(appState, 'canRecordEmulation', team.teamId) ? (
+                                    <div className="inline-flex items-center gap-1">
+                                      <button
+                                        onClick={() =>
+                                          handleQuickAdjustMemberPoints(
+                                            student,
+                                            2,
+                                            'Phát biểu xây dựng bài & thực hiện tốt nề nếp'
+                                          )
+                                        }
+                                        title={`Cộng nhanh +2 điểm cho ${student.fullName}`}
+                                        className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 font-mono font-bold text-[11px] transition-colors"
+                                      >
+                                        +2
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          handleQuickAdjustMemberPoints(
+                                            student,
+                                            -2,
+                                            'Nhắc nhở nề nếp / tác phong trong tuần'
+                                          )
+                                        }
+                                        title={`Trừ nhanh -2 điểm đối với ${student.fullName}`}
+                                        className="px-2 py-1 rounded-lg bg-red-50 hover:bg-red-600 text-red-700 hover:text-white border border-red-200 font-mono font-bold text-[11px] transition-colors"
+                                      >
+                                        -2
+                                      </button>
+                                      <button
+                                        onClick={() => handleOpenModalForMember(team.teamId, student.fullName, 'plus')}
+                                        title="Ghi điểm chi tiết theo tiêu chí"
+                                        className="p-1 rounded-lg bg-gray-100 hover:bg-blue-100 text-[#17365D] hover:text-[#1677E8] transition-colors"
+                                      >
+                                        <Plus className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span className="text-[11px] text-gray-400 italic">
+                                      {readOnly ? 'Chỉ xem' : 'Khóa'}
+                                    </span>
+                                  )}
                                 </td>
                               </tr>
                             );
@@ -1196,13 +1225,15 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                   Hiển thị các lượt chấm điểm trực tiếp của GVCN, ban cán sự và tổ trưởng trong tuần {selectedWeek}
                 </p>
               </div>
-              <button
-                onClick={() => handleOpenModalForMember(1, '', 'plus')}
-                className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1677E8] font-bold text-xs flex items-center gap-1.5 transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Thêm điểm ghi nhận
-              </button>
+              {canRecordAny && (
+                <button
+                  onClick={() => handleOpenModalForMember(isTeamLeader && userTeamId ? userTeamId : 1, '', 'plus')}
+                  className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1677E8] font-bold text-xs flex items-center gap-1.5 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Thêm điểm ghi nhận
+                </button>
+              )}
             </div>
 
             <div className="overflow-x-auto">
@@ -1225,7 +1256,7 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                   ).length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-8 text-center text-[#66809F]">
-                        Chưa có bản ghi điểm cộng/trừ phát sinh thêm trong Tuần {selectedWeek}. Thầy/cô có thể bấm nút <strong>+2 / -2</strong> trực tiếp trên danh sách thành viên từng tổ ở trên.
+                        Chưa có bản ghi điểm cộng/trừ phát sinh thêm trong Tuần {selectedWeek}.
                       </td>
                     </tr>
                   ) : (
@@ -1260,13 +1291,15 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                           <td className="py-3 px-3.5 text-[#66809F]">{r.recordedBy}</td>
                           <td className="py-3 px-3.5 text-[#66809F]">{r.note || '-'}</td>
                           <td className="py-3 px-3.5 text-right">
-                            <button
-                              onClick={() => handleDeleteRecord(r.id)}
-                              className="text-gray-400 hover:text-red-500 p-1"
-                              title="Xóa điểm thi đua"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {(isGVCN || hasPermission(appState, 'canRecordEmulation', r.teamId)) && (
+                              <button
+                                onClick={() => handleDeleteRecord(r.id)}
+                                className="text-gray-400 hover:text-red-500 p-1"
+                                title="Xóa điểm thi đua"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))

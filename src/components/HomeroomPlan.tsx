@@ -203,6 +203,7 @@ export const HomeroomPlanComponent: React.FC<HomeroomPlanProps> = ({
 
   // Open Create Modal with auto-filled default template for selected week
   const handleOpenCreateModal = (targetWeek = selectedWeek) => {
+    if (!canCreatePlan) return;
     const meta = getWeekMeta(targetWeek);
     setFormWeek(targetWeek);
     setFormTitle(`Kế hoạch công tác chủ nhiệm Tuần ${targetWeek} (${meta.label})`);
@@ -238,6 +239,7 @@ export const HomeroomPlanComponent: React.FC<HomeroomPlanProps> = ({
 
   // Open Edit Modal for existing plan
   const handleOpenEditModal = (plan: HomeroomPlan) => {
+    if (!canCreatePlan) return;
     setFormWeek(plan.weekNumber || selectedWeek);
     setFormTitle(plan.title);
     setFormTheme(plan.theme || getWeekMeta(plan.weekNumber || selectedWeek).theme);
@@ -257,6 +259,7 @@ export const HomeroomPlanComponent: React.FC<HomeroomPlanProps> = ({
 
   // Save Plan (Create or Update)
   const handleSavePlan = () => {
+    if (!canCreatePlan) return;
     const meta = getWeekMeta(formWeek);
     const planToSave: HomeroomPlan = {
       id: isCreatingNew ? `plan-w${formWeek}-${Date.now()}` : (activePlan?.id || `plan-w${formWeek}`),
@@ -303,11 +306,10 @@ export const HomeroomPlanComponent: React.FC<HomeroomPlanProps> = ({
 
   // Copy plan from previous week
   const handleCopyFromPreviousWeek = () => {
-    if (selectedWeek <= 1) return;
+    if (!canCreatePlan || selectedWeek <= 1) return;
     const prevWeekNum = selectedWeek - 1;
     const prevPlan = plans.find((p) => p.weekNumber === prevWeekNum);
     if (!prevPlan) {
-      alert(`Tuần ${prevWeekNum} chưa có kế hoạch để sao chép! Thầy/Cô vui lòng tạo kế hoạch mới.`);
       return;
     }
 
@@ -341,7 +343,7 @@ export const HomeroomPlanComponent: React.FC<HomeroomPlanProps> = ({
 
   // Toggle task done
   const handleToggleTask = (taskId: string) => {
-    if (!activePlan) return;
+    if (!canToggleTask || !activePlan) return;
     onUpdateState((prev) => ({
       ...prev,
       plans: prev.plans.map((p) =>
@@ -357,7 +359,7 @@ export const HomeroomPlanComponent: React.FC<HomeroomPlanProps> = ({
 
   // Add individual task
   const handleAddTask = () => {
-    if (!activePlan || !newTaskInput.content.trim()) return;
+    if ((!canCreatePlan && !canProposeTask) || !activePlan || !newTaskInput.content.trim()) return;
     const newTask = {
       id: `pt-${Date.now()}`,
       day: newTaskInput.day.trim(),
@@ -379,7 +381,7 @@ export const HomeroomPlanComponent: React.FC<HomeroomPlanProps> = ({
 
   // Delete individual task
   const handleDeleteTask = (taskId: string) => {
-    if (!activePlan) return;
+    if (!canCreatePlan || !activePlan) return;
     onUpdateState((prev) => ({
       ...prev,
       plans: prev.plans.map((p) =>
@@ -395,7 +397,7 @@ export const HomeroomPlanComponent: React.FC<HomeroomPlanProps> = ({
 
   // Add special student concern
   const handleAddSpecialStudent = () => {
-    if (!activePlan || !specialStudentInput.studentId || !specialStudentInput.reason.trim()) return;
+    if (!canCreatePlan || !activePlan || !specialStudentInput.studentId || !specialStudentInput.reason.trim()) return;
     const selectedStd = students.find((s) => s.id === specialStudentInput.studentId);
     if (!selectedStd) return;
 
@@ -424,7 +426,7 @@ export const HomeroomPlanComponent: React.FC<HomeroomPlanProps> = ({
 
   // Remove special student concern
   const handleRemoveSpecialStudent = (studentId: string) => {
-    if (!activePlan) return;
+    if (!canCreatePlan || !activePlan) return;
     onUpdateState((prev) => ({
       ...prev,
       plans: prev.plans.map((p) =>
@@ -440,7 +442,7 @@ export const HomeroomPlanComponent: React.FC<HomeroomPlanProps> = ({
 
   // Save review notes
   const handleSaveReviewNotes = () => {
-    if (!activePlan) return;
+    if (!canCreatePlan || !activePlan) return;
     onUpdateState((prev) => ({
       ...prev,
       plans: prev.plans.map((p) =>
@@ -452,6 +454,7 @@ export const HomeroomPlanComponent: React.FC<HomeroomPlanProps> = ({
 
   // AI Generator with Gemini
   const handleGenerateAIPlan = async () => {
+    if (!canCreatePlan || !canUseAI) return;
     setIsGeneratingAI(true);
     const meta = getWeekMeta(selectedWeek);
 
@@ -569,7 +572,7 @@ Hãy trả về JSON hợp lệ theo đúng cấu trúc sau (không bọc text n
 
   // Apply AI result
   const handleApplyAIPlan = () => {
-    if (!aiResultPreview) return;
+    if (!canCreatePlan || !aiResultPreview) return;
     onUpdateState((prev) => ({
       ...prev,
       plans: [
@@ -649,43 +652,37 @@ ${plan.reviewNotes || 'Đang thực hiện trong tuần'}`;
             Ma trận 35 tuần
           </button>
 
-          <button
-            onClick={() => {
-              if (!canUseAI) {
-                alert('Chế độ Chỉ xem: Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm để sử dụng Trợ lý AI soạn kế hoạch!');
-                return;
-              }
-              setAiFocusPrompt(currentMeta.theme);
-              setAiResultPreview(null);
-              setIsAIModalOpen(true);
-            }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all ${
-              canUseAI
-                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white'
-                : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
-            }`}
-          >
-            {!canUseAI ? <Lock className="w-4 h-4 text-gray-400" /> : <Sparkles className="w-4 h-4" />}
-            AI Soạn kế hoạch tuần
-          </button>
+          {canCreatePlan && canUseAI && (
+            <button
+              onClick={() => {
+                setAiFocusPrompt(currentMeta.theme);
+                setAiResultPreview(null);
+                setIsAIModalOpen(true);
+              }}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+            >
+              <Sparkles className="w-4 h-4" />
+              AI Soạn kế hoạch tuần
+            </button>
+          )}
 
-          <button
-            onClick={() => {
-              if (readOnly) {
-                alert('Chế độ Chỉ xem: Vui lòng đăng nhập tài khoản Giáo viên chủ nhiệm hoặc Cán sự lớp để tạo kế hoạch!');
-                return;
-              }
-              handleOpenCreateModal(selectedWeek);
-            }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all ${
-              !readOnly
-                ? 'bg-[#1677E8] hover:bg-blue-600 text-white shadow-blue-500/20'
-                : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
-            }`}
-          >
-            {readOnly ? <Lock className="w-4 h-4 text-gray-400" /> : <Plus className="w-4 h-4" />}
-            {isTeacher ? 'Tạo kế hoạch tuần mới' : 'Đề xuất kế hoạch tuần'}
-          </button>
+          {canCreatePlan ? (
+            <button
+              onClick={() => handleOpenCreateModal(selectedWeek)}
+              className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all bg-[#1677E8] hover:bg-blue-600 text-white shadow-blue-500/20"
+            >
+              <Plus className="w-4 h-4" />
+              Tạo kế hoạch tuần mới
+            </button>
+          ) : canProposeTask && activePlan ? (
+            <button
+              onClick={() => setIsNewTaskModalOpen(true)}
+              className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all bg-[#1677E8] hover:bg-blue-600 text-white shadow-blue-500/20"
+            >
+              <Plus className="w-4 h-4" />
+              Đề xuất công việc tuần
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -839,21 +836,25 @@ ${plan.reviewNotes || 'Đang thực hiện trong tuần'}`;
                   In kế hoạch
                 </button>
 
-                <button
-                  onClick={() => handleOpenEditModal(activePlan)}
-                  className="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1677E8] text-xs font-bold flex items-center gap-1.5 transition-colors"
-                >
-                  <Edit3 className="w-4 h-4" />
-                  Sửa kế hoạch
-                </button>
+                {canCreatePlan && (
+                  <>
+                    <button
+                      onClick={() => handleOpenEditModal(activePlan)}
+                      className="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1677E8] text-xs font-bold flex items-center gap-1.5 transition-colors"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      Sửa kế hoạch
+                    </button>
 
-                <button
-                  onClick={() => handleDeletePlan(activePlan.id)}
-                  className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
-                  title="Xóa kế hoạch tuần này"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                    <button
+                      onClick={() => handleDeletePlan(activePlan.id)}
+                      className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
+                      title="Xóa kế hoạch tuần này"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -935,44 +936,46 @@ ${plan.reviewNotes || 'Đang thực hiện trong tuần'}`;
                     Đánh dấu tick vào công việc khi đã hoàn thành để cập nhật tiến độ
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    if (currentUser?.teamId) {
-                      setNewTaskInput({
-                        day: 'Thứ Ba',
-                        content: '',
-                        responsible: `Tổ ${currentUser.teamId} & ${currentUser.name}`,
-                      });
-                    } else if (currentUser?.category === 'Ban cán sự') {
-                      setNewTaskInput({
-                        day: 'Thứ Ba',
-                        content: '',
-                        responsible: `${currentUser.roleTitle} & Ban cán sự`,
-                      });
-                    } else {
-                      setNewTaskInput({
-                        day: 'Thứ Ba',
-                        content: '',
-                        responsible: 'Ban cán sự & GVCN',
-                      });
-                    }
-                    setIsNewTaskModalOpen(true);
-                  }}
-                  className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1677E8] font-bold text-xs flex items-center gap-1.5"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  {currentUser?.teamId
-                    ? `Đề xuất việc Tổ ${currentUser.teamId}`
-                    : !isTeacher
-                    ? 'Đề xuất công việc'
-                    : 'Thêm công việc'}
-                </button>
+                {(canCreatePlan || canProposeTask) && (
+                  <button
+                    onClick={() => {
+                      if (currentUser?.teamId) {
+                        setNewTaskInput({
+                          day: 'Thứ Ba',
+                          content: '',
+                          responsible: `Tổ ${currentUser.teamId} & ${currentUser.name}`,
+                        });
+                      } else if (currentUser?.category === 'Ban cán sự') {
+                        setNewTaskInput({
+                          day: 'Thứ Ba',
+                          content: '',
+                          responsible: `${currentUser.roleTitle} & Ban cán sự`,
+                        });
+                      } else {
+                        setNewTaskInput({
+                          day: 'Thứ Ba',
+                          content: '',
+                          responsible: 'Ban cán sự & GVCN',
+                        });
+                      }
+                      setIsNewTaskModalOpen(true);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1677E8] font-bold text-xs flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    {currentUser?.teamId
+                      ? `Đề xuất việc Tổ ${currentUser.teamId}`
+                      : !isTeacher
+                      ? 'Đề xuất công việc'
+                      : 'Thêm công việc'}
+                  </button>
+                )}
               </div>
 
               <div className="divide-y divide-gray-100 border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-2xs">
                 {activePlan.tasks.length === 0 ? (
                   <div className="p-8 text-center text-xs text-gray-400">
-                    Chưa có công việc nào trong tuần này. Bấm "Thêm công việc" để lập lịch.
+                    Chưa có công việc nào trong tuần này.
                   </div>
                 ) : (
                   activePlan.tasks.map((task) => (
@@ -985,11 +988,14 @@ ${plan.reviewNotes || 'Đang thực hiện trong tuần'}`;
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
+                          disabled={!canToggleTask}
                           onClick={() => handleToggleTask(task.id)}
                           className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
                             task.done
                               ? 'bg-emerald-500 border-emerald-500 text-white'
-                              : 'border-gray-300 hover:border-[#1677E8] bg-white'
+                              : canToggleTask
+                              ? 'border-gray-300 hover:border-[#1677E8] bg-white cursor-pointer'
+                              : 'border-gray-200 bg-gray-100 cursor-not-allowed'
                           }`}
                         >
                           {task.done && <Check className="w-3.5 h-3.5 stroke-[3]" />}
@@ -1006,13 +1012,15 @@ ${plan.reviewNotes || 'Đang thực hiện trong tuần'}`;
                         <span className="px-2.5 py-1 rounded-md bg-gray-100 text-[#66809F] font-semibold text-[11px]">
                           Phụ trách: {task.responsible}
                         </span>
-                        <button
-                          onClick={() => handleDeleteTask(task.id)}
-                          className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50"
-                          title="Xóa công việc"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {canCreatePlan && (
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
+                            className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50"
+                            title="Xóa công việc"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))
@@ -1032,13 +1040,15 @@ ${plan.reviewNotes || 'Đang thực hiện trong tuần'}`;
                     Lưu ý các em có học lực yếu, hay đi trễ, gia cảnh đặc biệt hoặc cần bồi dưỡng thêm
                   </p>
                 </div>
-                <button
-                  onClick={() => setIsSpecialStudentModalOpen(true)}
-                  className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-xs flex items-center gap-1.5"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Thêm học sinh cần lưu ý
-                </button>
+                {canCreatePlan && (
+                  <button
+                    onClick={() => setIsSpecialStudentModalOpen(true)}
+                    className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-xs flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Thêm học sinh cần lưu ý
+                  </button>
+                )}
               </div>
 
               {(!activePlan.specialStudents || activePlan.specialStudents.length === 0) ? (
@@ -1066,13 +1076,15 @@ ${plan.reviewNotes || 'Đang thực hiện trong tuần'}`;
                           <strong className="text-emerald-900">Biện pháp:</strong> {item.actionPlan}
                         </p>
                       </div>
-                      <button
-                        onClick={() => handleRemoveSpecialStudent(item.studentId)}
-                        className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 shrink-0"
-                        title="Xóa khỏi danh sách"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {canCreatePlan && (
+                        <button
+                          onClick={() => handleRemoveSpecialStudent(item.studentId)}
+                          className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 shrink-0"
+                          title="Xóa khỏi danh sách"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1116,32 +1128,34 @@ ${plan.reviewNotes || 'Đang thực hiện trong tuần'}`;
                   <BookmarkCheck className="w-4 h-4 text-indigo-600" />
                   Đánh giá kết quả & Tự rút kinh nghiệm cuối tuần của GVCN
                 </h4>
-                {!isEditingReview ? (
-                  <button
-                    onClick={() => {
-                      setReviewNoteText(activePlan.reviewNotes || '');
-                      setIsEditingReview(true);
-                    }}
-                    className="text-[#1677E8] font-bold hover:underline flex items-center gap-1"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    {activePlan.reviewNotes ? 'Sửa đánh giá' : 'Viết đánh giá cuối tuần'}
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2">
+                {canCreatePlan && (
+                  !isEditingReview ? (
                     <button
-                      onClick={() => setIsEditingReview(false)}
-                      className="px-2.5 py-1 rounded-md bg-gray-200 text-gray-700 font-bold text-[11px]"
+                      onClick={() => {
+                        setReviewNoteText(activePlan.reviewNotes || '');
+                        setIsEditingReview(true);
+                      }}
+                      className="text-[#1677E8] font-bold hover:underline flex items-center gap-1"
                     >
-                      Hủy
+                      <Edit3 className="w-3.5 h-3.5" />
+                      {activePlan.reviewNotes ? 'Sửa đánh giá' : 'Viết đánh giá cuối tuần'}
                     </button>
-                    <button
-                      onClick={handleSaveReviewNotes}
-                      className="px-3 py-1 rounded-md bg-[#1677E8] text-white font-bold text-[11px]"
-                    >
-                      Lưu đánh giá
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setIsEditingReview(false)}
+                        className="px-2.5 py-1 rounded-md bg-gray-200 text-gray-700 font-bold text-[11px]"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        onClick={handleSaveReviewNotes}
+                        className="px-3 py-1 rounded-md bg-[#1677E8] text-white font-bold text-[11px]"
+                      >
+                        Lưu đánh giá
+                      </button>
+                    </div>
+                  )
                 )}
               </div>
 
@@ -1155,7 +1169,7 @@ ${plan.reviewNotes || 'Đang thực hiện trong tuần'}`;
                 ></textarea>
               ) : (
                 <p className="text-gray-700 italic leading-relaxed bg-white/80 p-3 rounded-xl border border-indigo-100">
-                  {activePlan.reviewNotes || 'Chưa có ghi chép đánh giá cuối tuần. Thầy/Cô có thể bấm "Viết đánh giá cuối tuần" sau tiết sinh hoạt lớp ngày thứ Bảy.'}
+                  {activePlan.reviewNotes || 'Chưa có ghi chép đánh giá cuối tuần.'}
                 </p>
               )}
             </div>
@@ -1179,37 +1193,41 @@ ${plan.reviewNotes || 'Đang thực hiện trong tuần'}`;
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
-            <button
-              onClick={() => handleOpenCreateModal(selectedWeek)}
-              className="px-4 py-2.5 rounded-xl bg-[#1677E8] hover:bg-blue-600 text-white font-bold text-xs flex items-center gap-2 shadow-sm shadow-blue-500/20"
-            >
-              <Plus className="w-4 h-4" />
-              Tạo kế hoạch theo mẫu chuẩn
-            </button>
-
-            <button
-              onClick={() => {
-                setAiFocusPrompt(currentMeta.theme);
-                setAiResultPreview(null);
-                setIsAIModalOpen(true);
-              }}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm"
-            >
-              <Sparkles className="w-4 h-4" />
-              AI soạn kế hoạch cho Tuần {selectedWeek}
-            </button>
-
-            {selectedWeek > 1 && plans.some((p) => p.weekNumber === selectedWeek - 1) && (
+          {canCreatePlan && (
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
               <button
-                onClick={handleCopyFromPreviousWeek}
-                className="px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#17365D] font-bold text-xs flex items-center gap-2"
+                onClick={() => handleOpenCreateModal(selectedWeek)}
+                className="px-4 py-2.5 rounded-xl bg-[#1677E8] hover:bg-blue-600 text-white font-bold text-xs flex items-center gap-2 shadow-sm shadow-blue-500/20"
               >
-                <Copy className="w-4 h-4 text-[#1677E8]" />
-                Sao chép từ Tuần {selectedWeek - 1}
+                <Plus className="w-4 h-4" />
+                Tạo kế hoạch theo mẫu chuẩn
               </button>
-            )}
-          </div>
+
+              {canUseAI && (
+                <button
+                  onClick={() => {
+                    setAiFocusPrompt(currentMeta.theme);
+                    setAiResultPreview(null);
+                    setIsAIModalOpen(true);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  AI soạn kế hoạch cho Tuần {selectedWeek}
+                </button>
+              )}
+
+              {selectedWeek > 1 && plans.some((p) => p.weekNumber === selectedWeek - 1) && (
+                <button
+                  onClick={handleCopyFromPreviousWeek}
+                  className="px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#17365D] font-bold text-xs flex items-center gap-2"
+                >
+                  <Copy className="w-4 h-4 text-[#1677E8]" />
+                  Sao chép từ Tuần {selectedWeek - 1}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 

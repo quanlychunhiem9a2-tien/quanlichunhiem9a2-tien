@@ -255,12 +255,10 @@ export const AcademicConduct: React.FC<AcademicConductProps> = ({
 
   // ==================== DEMO GRADES & CLEAR GRADES ====================
   const handleLoadDemoGrades = () => {
+    if (!canEditAcademics) return;
     onUpdateState((prev) => {
-      const teacherAcc = prev.userAccounts?.find((u) => u.role === 'teacher');
-      const activeUser = hasPermission(prev, 'canManageAcademics') ? prev.currentUser : teacherAcc || prev.currentUser;
       return {
         ...prev,
-        currentUser: activeUser,
         students: prev.students.map((s) => {
           const demo = (sampleDemoStudentGrades as Record<string, any>)[s.id] || sampleDemoStudentGrades['hs-01'];
           if (!demo) return s;
@@ -307,12 +305,10 @@ export const AcademicConduct: React.FC<AcademicConductProps> = ({
   };
 
   const handleClearTermGrades = () => {
+    if (!isTeacher(appState)) return;
     onUpdateState((prev) => {
-      const teacherAcc = prev.userAccounts?.find((u) => u.role === 'teacher');
-      const activeUser = hasPermission(prev, 'canManageAcademics') ? prev.currentUser : teacherAcc || prev.currentUser;
       return {
         ...prev,
-        currentUser: activeUser,
         students: prev.students.map((s) => {
           const emptyRec: SemesterRecord = {
             subjects: {},
@@ -956,7 +952,7 @@ Nhận xét gồm 3 phần:
               </button>
             )}
 
-            {canEditAcademics && termStats.hasScores > 0 && (
+            {isTeacher(appState) && termStats.hasScores > 0 && (
               <button
                 onClick={handleClearTermGrades}
                 title="Xóa sạch toàn bộ điểm của học kỳ này về trạng thái ban đầu để trống (-)"

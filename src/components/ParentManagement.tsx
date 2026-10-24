@@ -240,13 +240,15 @@ export const ParentManagement: React.FC<ParentManagementProps> = ({
         <div className="bg-white rounded-2xl border border-[#D8E7FA] shadow-xs p-5 space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-gray-100">
             <h3 className="font-bold text-sm text-[#17365D]">Lịch sử các cuộc trao đổi với phụ huynh</h3>
-            <button
-              onClick={() => setIsAddLogOpen(true)}
-              className="px-3.5 py-1.5 rounded-xl bg-[#1677E8] text-white text-xs font-bold flex items-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Thêm nhật ký mới
-            </button>
+            {canManageParents && (
+              <button
+                onClick={() => setIsAddLogOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-[#1677E8] text-white text-xs font-bold flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Thêm nhật ký mới
+              </button>
+            )}
           </div>
 
           <div className="space-y-3">

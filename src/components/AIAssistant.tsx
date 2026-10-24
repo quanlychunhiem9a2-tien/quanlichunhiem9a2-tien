@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { AppState, DocumentItem } from '../types';
 import { sendAIChatMessage } from '../api';
+import { isTeacher } from '../utils/permissionUtils';
 
 interface AIAssistantProps {
   appState: AppState;
@@ -122,6 +123,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
   };
 
   const handleSaveToDocs = (text: string) => {
+    if (!isTeacher(appState)) return;
     const newDoc: DocumentItem = {
       id: `doc-${Date.now()}`,
       title: `Văn bản tạo bởi Trợ lý AI (${new Date().toLocaleDateString('vi-VN')})`,
@@ -133,7 +135,6 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
       ...prev,
       documents: [newDoc, ...prev.documents],
     }));
-    alert('Đã lưu nội dung này vào Thư viện Hồ sơ - Văn bản thành công!');
   };
 
   const handleClearHistory = () => {
@@ -243,13 +244,15 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
                         )}
                         {copiedId === msg.id ? 'Đã sao chép' : 'Sao chép'}
                       </button>
-                      <button
-                        onClick={() => handleSaveToDocs(msg.text)}
-                        className="hover:text-[#1677E8] flex items-center gap-1 font-semibold"
-                      >
-                        <FileText className="w-3.5 h-3.5" />
-                        Lưu vào văn bản
-                      </button>
+                      {isTeacher(appState) && (
+                        <button
+                          onClick={() => handleSaveToDocs(msg.text)}
+                          className="hover:text-[#1677E8] flex items-center gap-1 font-semibold"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          Lưu vào văn bản
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}

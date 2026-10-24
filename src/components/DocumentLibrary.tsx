@@ -9,9 +9,11 @@ import {
   Check,
   Edit3,
   Trash2,
-  FolderOpen
+  FolderOpen,
+  Lock
 } from 'lucide-react';
 import { AppState, DocumentItem } from '../types';
+import { isTeacher, isReadOnly } from '../utils/permissionUtils';
 
 interface DocumentLibraryProps {
   appState: AppState;
@@ -23,6 +25,8 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
   onUpdateState,
 }) => {
   const { documents } = appState;
+  const canEditDocs = isTeacher(appState);
+  const readOnly = isReadOnly(appState);
   const [selectedDoc, setSelectedDoc] = useState<DocumentItem>(documents[0]);
   const [copied, setCopied] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -94,7 +98,7 @@ Chữ ký học sinh                  Chữ ký phụ huynh`
   };
 
   const handleSaveEdit = () => {
-    if (!selectedDoc) return;
+    if (!selectedDoc || !canEditDocs) return;
     onUpdateState((prev) => ({
       ...prev,
       documents: prev.documents.map((d) =>
@@ -128,26 +132,33 @@ Chữ ký học sinh                  Chữ ký phụ huynh`
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              const newDoc: DocumentItem = {
-                id: `doc-${Date.now()}`,
-                title: 'Văn bản mới (Dự thảo)',
-                category: 'Thông báo',
-                date: '11/09/2026',
-                content: sampleTemplates[0].content,
-              };
-              onUpdateState((prev) => ({
-                ...prev,
-                documents: [newDoc, ...prev.documents],
-              }));
-              setSelectedDoc(newDoc);
-            }}
-            className="px-4 py-2 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Tạo văn bản mới
-          </button>
+          {canEditDocs ? (
+            <button
+              onClick={() => {
+                const newDoc: DocumentItem = {
+                  id: `doc-${Date.now()}`,
+                  title: 'Văn bản mới (Dự thảo)',
+                  category: 'Thông báo',
+                  date: '11/09/2026',
+                  content: sampleTemplates[0].content,
+                };
+                onUpdateState((prev) => ({
+                  ...prev,
+                  documents: [newDoc, ...prev.documents],
+                }));
+                setSelectedDoc(newDoc);
+              }}
+              className="px-4 py-2 rounded-xl bg-[#1677E8] hover:bg-[#0B438A] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              Tạo văn bản mới
+            </button>
+          ) : (
+            <span className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-amber-600" />
+              {readOnly ? 'Chế độ Chỉ xem (Không được tạo/sửa văn bản)' : 'Chỉ GVCN mới có quyền tạo/chỉnh sửa văn bản'}
+            </span>
+          )}
         </div>
       </div>
 
@@ -209,24 +220,26 @@ Chữ ký học sinh                  Chữ ký phụ huynh`
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {isEditing ? (
-                    <button
-                      onClick={handleSaveEdit}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
-                    >
-                      Lưu thay đổi
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setEditContent(selectedDoc.content);
-                        setIsEditing(true);
-                      }}
-                      className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#17365D] font-bold text-xs flex items-center gap-1.5"
-                    >
-                      <Edit3 className="w-3.5 h-3.5 text-[#1677E8]" />
-                      Chỉnh sửa
-                    </button>
+                  {canEditDocs && (
+                    isEditing ? (
+                      <button
+                        onClick={handleSaveEdit}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                      >
+                        Lưu thay đổi
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setEditContent(selectedDoc.content);
+                          setIsEditing(true);
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#17365D] font-bold text-xs flex items-center gap-1.5"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-[#1677E8]" />
+                        Chỉnh sửa
+                      </button>
+                    )
                   )}
 
                   <button

@@ -2,8 +2,8 @@ import { AppState } from './types';
 import { defaultAppState, guestUserAccount } from './mockData';
 import { normalizeStudentTT22 } from './utils/tt22Evaluation';
 
-const STORAGE_KEY = 'gvcn_ai_app_state_v1';
-const SESSION_USER_KEY = 'gvcn_ai_session_user_v1';
+const STORAGE_KEY = 'gvcn_ai_app_state_v2';
+const SESSION_USER_KEY = 'gvcn_ai_session_user_v2';
 
 function getSessionUser() {
   try {

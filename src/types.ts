@@ -1,25 +1,25 @@
-export type AcademicRankTT22 = 'Tốt' | 'Khá' | 'Đạt' | 'Chưa đạt' | 'Giỏi' | 'Trung bình' | 'Yếu';
-export type ConductRankTT22 = 'Tốt' | 'Khá' | 'Đạt' | 'Chưa đạt';
+export type AcademicRankTT22 = 'Tốt' | 'Khá' | 'Đạt' | 'Chưa đạt' | 'Chưa đủ môn' | 'Chưa đánh giá' | '' | 'Giỏi' | 'Trung bình' | 'Yếu';
+export type ConductRankTT22 = 'Tốt' | 'Khá' | 'Đạt' | 'Chưa đạt' | 'Chưa đánh giá' | '';
 export type AwardTitleTT22 = 'Học sinh Xuất sắc' | 'Học sinh Giỏi' | '' | string;
 
 export type SemesterTerm = 'hk1' | 'hk2' | 'caNam';
 
 export interface EvaluatedSubjects {
-  physicalEducation: 'Đạt' | 'Chưa đạt'; // Giáo dục thể chất
-  art: 'Đạt' | 'Chưa đạt'; // Nghệ thuật (Âm nhạc, Mỹ thuật)
-  experientialActivities: 'Đạt' | 'Chưa đạt'; // Hoạt động trải nghiệm, hướng nghiệp
-  localEducation: 'Đạt' | 'Chưa đạt'; // Nội dung giáo dục địa phương
+  physicalEducation?: 'Đạt' | 'Chưa đạt' | '' | 'Chưa đánh giá'; // Giáo dục thể chất
+  art?: 'Đạt' | 'Chưa đạt' | '' | 'Chưa đánh giá'; // Nghệ thuật (Âm nhạc, Mỹ thuật)
+  experientialActivities?: 'Đạt' | 'Chưa đạt' | '' | 'Chưa đánh giá'; // Hoạt động trải nghiệm, hướng nghiệp
+  localEducation?: 'Đạt' | 'Chưa đạt' | '' | 'Chưa đánh giá'; // Nội dung giáo dục địa phương
 }
 
 export interface SubjectGrades {
-  math: number;
-  literature: number;
-  english: number;
-  naturalScience: number;
-  historyGeography: number;
-  informatics: number;
-  civics: number;
-  [key: string]: number;
+  math?: number;
+  literature?: number;
+  english?: number;
+  naturalScience?: number;
+  historyGeography?: number;
+  informatics?: number;
+  civics?: number;
+  [key: string]: number | undefined;
 }
 
 export interface SemesterRecord {

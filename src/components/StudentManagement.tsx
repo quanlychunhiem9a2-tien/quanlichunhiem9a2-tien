@@ -161,21 +161,13 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       parentName: parentName || `Phụ huynh em ${fullName}`,
       parentPhone: parentPhone || '09' + Math.floor(10000000 + Math.random() * 90000000),
       parentJob,
-      academicRank: 'Tốt',
+      academicRank: '',
       conductRank: 'Tốt',
       awardTitle: '',
-      gpa: 8.0,
+      gpa: 0,
       notes: notes || 'Nhập từ file Excel',
-      subjects: {
-        math: 8.0,
-        literature: 8.0,
-        english: 8.0,
-        naturalScience: 8.0,
-        historyGeography: 8.0,
-        informatics: 8.0,
-        civics: 8.0,
-      },
-      evaluatedSubjects: { ...defaultEvaluatedSubjects },
+      subjects: {},
+      evaluatedSubjects: {},
     };
 
     return normalizeStudentTT22(studentObj);
@@ -485,21 +477,13 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       parentName: '',
       parentPhone: '',
       parentJob: '',
-      academicRank: 'Tốt',
+      academicRank: '',
       conductRank: 'Tốt',
-      awardTitle: 'Học sinh Giỏi',
-      gpa: 8.5,
+      awardTitle: '',
+      gpa: 0,
       notes: '',
-      subjects: {
-        math: 8.5,
-        literature: 8.0,
-        english: 8.5,
-        naturalScience: 8.5,
-        historyGeography: 8.0,
-        informatics: 9.0,
-        civics: 8.5,
-      },
-      evaluatedSubjects: { ...defaultEvaluatedSubjects },
+      subjects: {},
+      evaluatedSubjects: {},
     };
     setStudentToEdit(newStudent);
     setIsEditingModalOpen(true);
@@ -1123,7 +1107,9 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                       </h5>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {termRec.subjects &&
-                          Object.entries(termRec.subjects).map(([subjectKey, score]) => {
+                          (['math', 'literature', 'english', 'naturalScience', 'historyGeography', 'informatics', 'civics'] as (keyof SubjectGrades)[]).map((subjectKey) => {
+                            const score = termRec.subjects[subjectKey];
+                            const hasScore = typeof score === 'number' && !isNaN(score);
                             const subjectNames: Record<string, string> = {
                               math: 'Toán học',
                               literature: 'Ngữ văn',
@@ -1133,14 +1119,16 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                               informatics: 'Tin học',
                               civics: 'GDCD',
                             };
-                            const isHigh = score >= 8.0;
-                            const isMedium = score >= 6.5;
-                            const isPass = score >= 5.0;
+                            const isHigh = hasScore && score >= 8.0;
+                            const isMedium = hasScore && score >= 6.5;
+                            const isPass = hasScore && score >= 5.0;
                             return (
                               <div
                                 key={subjectKey}
                                 className={`p-2.5 rounded-xl border text-center transition-all ${
-                                  isHigh
+                                  !hasScore
+                                    ? 'bg-gray-50 border-gray-200 text-gray-500'
+                                    : isHigh
                                     ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
                                     : isMedium
                                     ? 'bg-blue-50/60 border-blue-200 text-blue-900'
@@ -1153,7 +1141,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                                   {subjectNames[subjectKey] || subjectKey}
                                 </span>
                                 <span className="text-lg font-black font-mono">
-                                  {score.toFixed(1)}
+                                  {hasScore ? score.toFixed(1) : '-'}
                                 </span>
                               </div>
                             );

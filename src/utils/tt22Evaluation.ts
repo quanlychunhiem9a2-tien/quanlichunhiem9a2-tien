@@ -10,7 +10,7 @@ import {
 } from '../types';
 
 export interface TT22EvaluationResult {
-  academicRank: 'Tốt' | 'Khá' | 'Đạt' | 'Chưa đạt';
+  academicRank: 'Tốt' | 'Khá' | 'Đạt' | 'Chưa đạt' | 'Chưa đủ môn' | 'Chưa đánh giá' | '';
   awardTitle: 'Học sinh Xuất sắc' | 'Học sinh Giỏi' | '';
   gpa: number;
   scoresCount: number;
@@ -58,7 +58,7 @@ export const defaultEvaluatedSubjects: EvaluatedSubjects = {
  * - Các mức còn lại (Đạt, Chưa đạt) để trống.
  */
 export function evaluateStudentTT22(
-  subjects: Record<string, number> = {},
+  subjects: SubjectGrades | Record<string, number | undefined> = {},
   evaluated: EvaluatedSubjects = defaultEvaluatedSubjects,
   conductRank: string = 'Tốt',
   existingAward?: string
@@ -82,7 +82,51 @@ export function evaluateStudentTT22(
   const commentSubjectsFailCount = evalValues.filter((v) => v === 'Chưa đạt').length;
   const commentSubjectsAllPass = commentSubjectsFailCount === 0;
 
-  let academicRank: 'Tốt' | 'Khá' | 'Đạt' | 'Chưa đạt' = 'Chưa đạt';
+  // IF NO SCORES ENTERED:
+  if (scoresCount === 0) {
+    return {
+      academicRank: '',
+      awardTitle: '',
+      gpa: 0,
+      scoresCount: 0,
+      countGte9: 0,
+      countGte8: 0,
+      countGte65: 0,
+      countGte50: 0,
+      countLt50: 0,
+      countLt35: 0,
+      allGte65: false,
+      allGte50: false,
+      allGte35: false,
+      commentSubjectsAllPass: false,
+      commentSubjectsFailCount: 0,
+      reason: 'Chưa có kết quả học tập (chưa nhập điểm)',
+    };
+  }
+
+  // IF INCOMPLETE (FEWER THAN 6 SCORED SUBJECTS):
+  if (scoresCount < 6) {
+    return {
+      academicRank: 'Chưa đủ môn',
+      awardTitle: '',
+      gpa,
+      scoresCount,
+      countGte9,
+      countGte8,
+      countGte65,
+      countGte50,
+      countLt50,
+      countLt35,
+      allGte65,
+      allGte50,
+      allGte35,
+      commentSubjectsAllPass,
+      commentSubjectsFailCount,
+      reason: `Chưa đủ môn để xếp loại theo TT22 (mới có ${scoresCount}/7 môn, cần tối thiểu 6 môn)`,
+    };
+  }
+
+  let academicRank: 'Tốt' | 'Khá' | 'Đạt' | 'Chưa đạt' | 'Chưa đủ môn' | 'Chưa đánh giá' | '' = 'Chưa đạt';
   let reason = '';
 
   // a) Mức Tốt
@@ -162,39 +206,56 @@ export function evaluateStudentTT22(
  *   + Đạt nếu HK2 Đạt và HK1 Đạt trở lên
  *   + Chưa đạt: các trường hợp còn lại
  */
-export function computeYearFromSemesters(sem1: SemesterRecord, sem2: SemesterRecord): SemesterRecord {
-  const yearSubjects: SubjectGrades = {
-    math: Number(((sem1.subjects.math + 2 * sem2.subjects.math) / 3).toFixed(1)),
-    literature: Number(((sem1.subjects.literature + 2 * sem2.subjects.literature) / 3).toFixed(1)),
-    english: Number(((sem1.subjects.english + 2 * sem2.subjects.english) / 3).toFixed(1)),
-    naturalScience: Number(((sem1.subjects.naturalScience + 2 * sem2.subjects.naturalScience) / 3).toFixed(1)),
-    historyGeography: Number(((sem1.subjects.historyGeography + 2 * sem2.subjects.historyGeography) / 3).toFixed(1)),
-    informatics: Number(((sem1.subjects.informatics + 2 * sem2.subjects.informatics) / 3).toFixed(1)),
-    civics: Number(((sem1.subjects.civics + 2 * sem2.subjects.civics) / 3).toFixed(1)),
-  };
+export function computeYearFromSemesters(sem1?: SemesterRecord, sem2?: SemesterRecord): SemesterRecord {
+  const hasSem1 = sem1 && sem1.subjects && Object.values(sem1.subjects).some((v) => typeof v === 'number' && !isNaN(v));
+  const hasSem2 = sem2 && sem2.subjects && Object.values(sem2.subjects).some((v) => typeof v === 'number' && !isNaN(v));
+
+  if (!hasSem1 || !hasSem2) {
+    return {
+      subjects: {},
+      evaluatedSubjects: {},
+      gpa: 0,
+      academicRank: '',
+      conductRank: sem1?.conductRank || 'Tốt',
+      awardTitle: '',
+      notes: 'Chưa đủ điểm HK1 và HK2 để tổng kết Cả năm',
+    };
+  }
+
+  const s1 = sem1!.subjects;
+  const s2 = sem2!.subjects;
+  const yearSubjects: SubjectGrades = {};
+  const standardSubjects = ['math', 'literature', 'english', 'naturalScience', 'historyGeography', 'informatics', 'civics'];
+  for (const k of standardSubjects) {
+    const v1 = s1[k];
+    const v2 = s2[k];
+    if (typeof v1 === 'number' && typeof v2 === 'number') {
+      yearSubjects[k] = Number(((v1 + 2 * v2) / 3).toFixed(1));
+    }
+  }
 
   const yearEvaluated: EvaluatedSubjects = {
-    physicalEducation: sem2.evaluatedSubjects.physicalEducation === 'Đạt' ? 'Đạt' : 'Chưa đạt',
-    art: sem2.evaluatedSubjects.art === 'Đạt' ? 'Đạt' : 'Chưa đạt',
-    experientialActivities: sem2.evaluatedSubjects.experientialActivities === 'Đạt' ? 'Đạt' : 'Chưa đạt',
-    localEducation: sem2.evaluatedSubjects.localEducation === 'Đạt' ? 'Đạt' : 'Chưa đạt',
+    physicalEducation: sem2?.evaluatedSubjects?.physicalEducation === 'Đạt' ? 'Đạt' : 'Chưa đạt',
+    art: sem2?.evaluatedSubjects?.art === 'Đạt' ? 'Đạt' : 'Chưa đạt',
+    experientialActivities: sem2?.evaluatedSubjects?.experientialActivities === 'Đạt' ? 'Đạt' : 'Chưa đạt',
+    localEducation: sem2?.evaluatedSubjects?.localEducation === 'Đạt' ? 'Đạt' : 'Chưa đạt',
   };
 
   // Determine year conduct rank according to TT22 Article 8
   let yearConduct: ConductRankTT22 = 'Đạt';
-  if (sem2.conductRank === 'Tốt') {
-    if (sem1.conductRank === 'Tốt' || sem1.conductRank === 'Khá') {
+  if (sem2?.conductRank === 'Tốt') {
+    if (sem1?.conductRank === 'Tốt' || sem1?.conductRank === 'Khá') {
       yearConduct = 'Tốt';
     } else {
       yearConduct = 'Khá';
     }
-  } else if (sem2.conductRank === 'Khá') {
-    if (sem1.conductRank === 'Tốt' || sem1.conductRank === 'Khá') {
+  } else if (sem2?.conductRank === 'Khá') {
+    if (sem1?.conductRank === 'Tốt' || sem1?.conductRank === 'Khá') {
       yearConduct = 'Khá';
     } else {
       yearConduct = 'Đạt';
     }
-  } else if (sem2.conductRank === 'Đạt') {
+  } else if (sem2?.conductRank === 'Đạt') {
     yearConduct = 'Đạt';
   } else {
     yearConduct = 'Chưa đạt';
@@ -209,7 +270,7 @@ export function computeYearFromSemesters(sem1: SemesterRecord, sem2: SemesterRec
     academicRank: evalResult.academicRank,
     conductRank: yearConduct,
     awardTitle: evalResult.awardTitle,
-    notes: `Tổng kết Cả năm: HK1 (${sem1.gpa.toFixed(1)} - ${sem1.academicRank}), HK2 (${sem2.gpa.toFixed(1)} - ${sem2.academicRank})`,
+    notes: `Tổng kết Cả năm: HK1 (${sem1!.gpa.toFixed(1)} - ${sem1!.academicRank || '-'}), HK2 (${sem2!.gpa.toFixed(1)} - ${sem2!.academicRank || '-'})`,
   };
 }
 
@@ -221,31 +282,52 @@ export function getStudentSemesterRecord(student: Student, term: SemesterTerm): 
     if (student.semester1) return student.semester1;
   } else if (term === 'hk2') {
     if (student.semester2) return student.semester2;
+    return {
+      subjects: {},
+      evaluatedSubjects: {},
+      gpa: 0,
+      academicRank: '',
+      conductRank: student.conductRank || 'Tốt',
+      awardTitle: '',
+      notes: 'Chưa có kết quả Học kỳ 2',
+    };
   } else {
     if (student.yearOverall) return student.yearOverall;
+    return {
+      subjects: {},
+      evaluatedSubjects: {},
+      gpa: 0,
+      academicRank: '',
+      conductRank: student.conductRank || 'Tốt',
+      awardTitle: '',
+      notes: 'Chưa có kết quả Cả năm',
+    };
   }
 
-  // Fallback to base student attributes
-  const subjects: SubjectGrades = student.subjects || {
-    math: 8.0,
-    literature: 8.0,
-    english: 8.0,
-    naturalScience: 8.0,
-    historyGeography: 8.0,
-    informatics: 8.0,
-    civics: 8.0,
-  };
-  const evaluated = student.evaluatedSubjects || defaultEvaluatedSubjects;
-  const evalRes = evaluateStudentTT22(subjects, evaluated, student.conductRank, student.awardTitle);
+  // Fallback to base student attributes if scores exist
+  const hasScores = student.subjects && Object.values(student.subjects).some((v) => typeof v === 'number' && !isNaN(v));
+  if (hasScores) {
+    const evaluated = student.evaluatedSubjects || defaultEvaluatedSubjects;
+    const evalRes = evaluateStudentTT22(student.subjects!, evaluated, student.conductRank, student.awardTitle);
+    return {
+      subjects: { ...student.subjects! },
+      evaluatedSubjects: { ...evaluated },
+      gpa: evalRes.gpa,
+      academicRank: evalRes.academicRank,
+      conductRank: student.conductRank || 'Tốt',
+      awardTitle: student.awardTitle || evalRes.awardTitle,
+      notes: student.notes,
+    };
+  }
 
   return {
-    subjects,
-    evaluatedSubjects: evaluated,
-    gpa: evalRes.gpa,
-    academicRank: evalRes.academicRank,
+    subjects: {},
+    evaluatedSubjects: {},
+    gpa: 0,
+    academicRank: '',
     conductRank: student.conductRank || 'Tốt',
-    awardTitle: student.awardTitle || evalRes.awardTitle,
-    notes: student.notes,
+    awardTitle: '',
+    notes: 'Chưa có kết quả học tập',
   };
 }
 
@@ -253,23 +335,14 @@ export function getStudentSemesterRecord(student: Student, term: SemesterTerm): 
  * Chuẩn hóa một đối tượng học sinh sang định dạng Thông tư 22 bao gồm HK1, HK2, Cả năm
  */
 export function normalizeStudentTT22(student: Student): Student {
-  const evaluated = student.evaluatedSubjects || defaultEvaluatedSubjects;
-  const subjects: SubjectGrades = {
-    math: typeof student.subjects?.math === 'number' ? student.subjects.math : 8.0,
-    literature: typeof student.subjects?.literature === 'number' ? student.subjects.literature : 8.0,
-    english: typeof student.subjects?.english === 'number' ? student.subjects.english : 8.0,
-    naturalScience: typeof student.subjects?.naturalScience === 'number' ? student.subjects.naturalScience : 8.0,
-    historyGeography: typeof student.subjects?.historyGeography === 'number' ? student.subjects.historyGeography : 8.0,
-    informatics: typeof student.subjects?.informatics === 'number' ? student.subjects.informatics : 8.0,
-    civics: typeof student.subjects?.civics === 'number' ? student.subjects.civics : 8.0,
-  };
+  const hasBaseScores = student.subjects && Object.values(student.subjects).some((v) => typeof v === 'number' && !isNaN(v));
 
   // 1. Prepare Semester 1 record
   let sem1: SemesterRecord;
-  if (student.semester1 && student.semester1.subjects) {
+  if (student.semester1 && student.semester1.subjects && Object.values(student.semester1.subjects).some((v) => typeof v === 'number' && !isNaN(v))) {
     const sem1Eval = evaluateStudentTT22(
       student.semester1.subjects,
-      student.semester1.evaluatedSubjects || evaluated,
+      student.semester1.evaluatedSubjects || {},
       student.semester1.conductRank || student.conductRank,
       student.semester1.awardTitle
     );
@@ -280,10 +353,11 @@ export function normalizeStudentTT22(student: Student): Student {
       awardTitle: student.semester1.awardTitle !== undefined ? student.semester1.awardTitle : sem1Eval.awardTitle,
       conductRank: student.semester1.conductRank || 'Tốt',
     };
-  } else {
-    const sem1Eval = evaluateStudentTT22(subjects, evaluated, student.conductRank, student.awardTitle);
+  } else if (hasBaseScores) {
+    const evaluated = student.evaluatedSubjects || defaultEvaluatedSubjects;
+    const sem1Eval = evaluateStudentTT22(student.subjects!, evaluated, student.conductRank, student.awardTitle);
     sem1 = {
-      subjects: { ...subjects },
+      subjects: { ...student.subjects! },
       evaluatedSubjects: { ...evaluated },
       gpa: sem1Eval.gpa,
       academicRank: sem1Eval.academicRank,
@@ -291,14 +365,24 @@ export function normalizeStudentTT22(student: Student): Student {
       awardTitle: student.awardTitle || sem1Eval.awardTitle,
       notes: 'Bảng điểm Học kỳ 1',
     };
+  } else {
+    sem1 = {
+      subjects: {},
+      evaluatedSubjects: {},
+      gpa: 0,
+      academicRank: '',
+      conductRank: student.conductRank || 'Tốt',
+      awardTitle: '',
+      notes: 'Chưa có điểm Học kỳ 1',
+    };
   }
 
-  // 2. Prepare Semester 2 record
-  let sem2: SemesterRecord;
-  if (student.semester2 && student.semester2.subjects) {
+  // 2. Prepare Semester 2 record (DO NOT generate fake random scores!)
+  let sem2: SemesterRecord | undefined = undefined;
+  if (student.semester2 && student.semester2.subjects && Object.values(student.semester2.subjects).some((v) => typeof v === 'number' && !isNaN(v))) {
     const sem2Eval = evaluateStudentTT22(
       student.semester2.subjects,
-      student.semester2.evaluatedSubjects || evaluated,
+      student.semester2.evaluatedSubjects || {},
       student.semester2.conductRank || student.conductRank,
       student.semester2.awardTitle
     );
@@ -309,42 +393,29 @@ export function normalizeStudentTT22(student: Student): Student {
       awardTitle: student.semester2.awardTitle !== undefined ? student.semester2.awardTitle : sem2Eval.awardTitle,
       conductRank: student.semester2.conductRank || 'Tốt',
     };
-  } else {
-    // Generate realistic HK2 from sem1 (slight variance ±0.3 capped between 0 and 10)
-    const sem2Subjects: SubjectGrades = {
-      math: Math.min(10, Math.max(0, Number((sem1.subjects.math + (Math.random() > 0.5 ? 0.2 : -0.1)).toFixed(1)))),
-      literature: Math.min(10, Math.max(0, Number((sem1.subjects.literature + (Math.random() > 0.5 ? 0.3 : 0.0)).toFixed(1)))),
-      english: Math.min(10, Math.max(0, Number((sem1.subjects.english + (Math.random() > 0.5 ? 0.2 : -0.2)).toFixed(1)))),
-      naturalScience: Math.min(10, Math.max(0, Number((sem1.subjects.naturalScience + (Math.random() > 0.4 ? 0.2 : -0.1)).toFixed(1)))),
-      historyGeography: Math.min(10, Math.max(0, Number((sem1.subjects.historyGeography + (Math.random() > 0.5 ? 0.1 : 0.0)).toFixed(1)))),
-      informatics: Math.min(10, Math.max(0, Number((sem1.subjects.informatics + (Math.random() > 0.5 ? 0.2 : 0.0)).toFixed(1)))),
-      civics: Math.min(10, Math.max(0, Number((sem1.subjects.civics + (Math.random() > 0.5 ? 0.1 : 0.0)).toFixed(1)))),
-    };
-    const sem2Eval = evaluateStudentTT22(sem2Subjects, evaluated, sem1.conductRank);
-    sem2 = {
-      subjects: sem2Subjects,
-      evaluatedSubjects: { ...evaluated },
-      gpa: sem2Eval.gpa,
-      academicRank: sem2Eval.academicRank,
-      conductRank: sem1.conductRank,
-      awardTitle: sem2Eval.awardTitle,
-      notes: 'Bảng điểm Học kỳ 2',
-    };
   }
 
-  // 3. Compute Whole Year record
-  const yearRecord = student.yearOverall && student.yearOverall.subjects
-    ? student.yearOverall
-    : computeYearFromSemesters(sem1, sem2);
+  // 3. Compute Whole Year record only if both HK1 and HK2 have scores
+  let yearRecord: SemesterRecord | undefined = undefined;
+  const hasSem1Scores = Object.values(sem1.subjects).some((v) => typeof v === 'number' && !isNaN(v));
+  const hasSem2Scores = sem2 && Object.values(sem2.subjects).some((v) => typeof v === 'number' && !isNaN(v));
+
+  if (student.yearOverall && student.yearOverall.subjects && Object.values(student.yearOverall.subjects).some((v) => typeof v === 'number' && !isNaN(v))) {
+    yearRecord = student.yearOverall;
+  } else if (hasSem1Scores && hasSem2Scores) {
+    yearRecord = computeYearFromSemesters(sem1, sem2);
+  }
+
+  const activeOverall = yearRecord || (hasSem1Scores ? sem1 : undefined);
 
   return {
     ...student,
-    academicRank: yearRecord.academicRank,
-    awardTitle: student.awardTitle !== undefined ? student.awardTitle : yearRecord.awardTitle,
-    gpa: yearRecord.gpa,
-    conductRank: yearRecord.conductRank,
-    subjects: yearRecord.subjects,
-    evaluatedSubjects: yearRecord.evaluatedSubjects,
+    academicRank: activeOverall ? activeOverall.academicRank : '',
+    awardTitle: activeOverall ? (student.awardTitle !== undefined ? student.awardTitle : activeOverall.awardTitle) : '',
+    gpa: activeOverall ? activeOverall.gpa : 0,
+    conductRank: activeOverall ? activeOverall.conductRank : (student.conductRank || 'Tốt'),
+    subjects: activeOverall ? activeOverall.subjects : {},
+    evaluatedSubjects: activeOverall ? activeOverall.evaluatedSubjects : {},
     semester1: sem1,
     semester2: sem2,
     yearOverall: yearRecord,

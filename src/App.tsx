@@ -67,10 +67,8 @@ export default function App() {
 
     syncWeekWithClock();
     const timer = setInterval(syncWeekWithClock, 60000);
-    window.addEventListener('focus', syncWeekWithClock);
     return () => {
       clearInterval(timer);
-      window.removeEventListener('focus', syncWeekWithClock);
     };
   }, [isLoaded]);
 
@@ -85,8 +83,12 @@ export default function App() {
           return prev;
         }
       }
-      saveAppState(next);
-      return next;
+      const nextWithTimestamp: AppState = {
+        ...next,
+        updatedAt: new Date().toISOString(),
+      };
+      saveAppState(nextWithTimestamp);
+      return nextWithTimestamp;
     });
   };
 

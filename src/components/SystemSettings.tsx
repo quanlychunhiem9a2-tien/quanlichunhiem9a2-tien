@@ -42,7 +42,8 @@ import { processAvatarImageFile, PRESET_TEACHER_AVATARS } from '../utils/avatarU
 import {
   syncUserAccountsWithStudents,
   STANDARD_CLASS_ROLES,
-  applyStudentTeamOrRoleUpdate
+  applyStudentTeamOrRoleUpdate,
+  applyAvatarUpdate
 } from '../utils/cadreSyncUtils';
 
 interface SystemSettingsProps {
@@ -119,28 +120,21 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
     if (!file) return;
     try {
       const dataUrl = await processAvatarImageFile(file);
-      onUpdateState((prev) => {
-        const currentAccounts = prev.userAccounts || initialUserAccounts;
-        const targetAcc = currentAccounts.find((a) => a.id === accountId);
-        const updatedAccounts = currentAccounts.map((acc) =>
-          acc.id === accountId ? { ...acc, avatar: dataUrl } : acc
-        );
-        const updatedStudents = targetAcc?.studentId
-          ? prev.students.map((st) =>
-              st.id === targetAcc.studentId ? { ...st, avatar: dataUrl } : st
-            )
-          : prev.students;
-        const updatedCurrentUser =
-          prev.currentUser?.id === accountId
-            ? { ...prev.currentUser, avatar: dataUrl }
-            : prev.currentUser;
-        return {
-          ...prev,
-          userAccounts: updatedAccounts,
-          students: updatedStudents,
-          currentUser: updatedCurrentUser,
-        };
-      });
+      const targetAcc = userAccounts.find((a) => a.id === accountId);
+      onUpdateState((prev) =>
+        applyAvatarUpdate(
+          prev,
+          {
+            accountId,
+            studentId: targetAcc?.studentId,
+            isTeacher: targetAcc?.role === 'teacher' || accountId === teacherAccount?.id,
+          },
+          dataUrl
+        )
+      );
+      setEditingAccount((prev) =>
+        prev && prev.id === accountId ? { ...prev, avatar: dataUrl } : prev
+      );
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
@@ -150,21 +144,18 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
 
   const handleSetTeacherPresetAvatar = (presetUrl: string) => {
     if (!teacherAccount) return;
-    onUpdateState((prev) => {
-      const currentAccounts = prev.userAccounts || initialUserAccounts;
-      const updatedAccounts = currentAccounts.map((acc) =>
-        acc.id === teacherAccount.id ? { ...acc, avatar: presetUrl } : acc
-      );
-      const updatedCurrentUser =
-        prev.currentUser?.id === teacherAccount.id
-          ? { ...prev.currentUser, avatar: presetUrl }
-          : prev.currentUser;
-      return {
-        ...prev,
-        userAccounts: updatedAccounts,
-        currentUser: updatedCurrentUser,
-      };
-    });
+    onUpdateState((prev) =>
+      applyAvatarUpdate(
+        prev,
+        {
+          accountId: teacherAccount.id,
+          isTeacher: true,
+        },
+        presetUrl
+      )
+    );
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   const handleSave = () => {
@@ -847,11 +838,30 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
           {/* Active User Indicator */}
           <div className="bg-gradient-to-r from-blue-50 via-indigo-50/60 to-blue-50 rounded-2xl p-4 border border-blue-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-3">
-              <img
-                src={currentUser.avatar}
-                alt=""
-                className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-xs"
-              />
+              <label
+                title="Nhấn để đổi ảnh đại diện của tài khoản đang đăng nhập"
+                className="relative group/activeuser cursor-pointer shrink-0"
+              >
+                <img
+                  src={currentUser.avatar}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-xs bg-white"
+                />
+                <span className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/activeuser:opacity-100 flex items-center justify-center text-white transition-opacity">
+                  <Camera className="w-3.5 h-3.5" />
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleAccountAvatarUpload(currentUser.id, file);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-extrabold text-[#17365D] text-sm">{currentUser.name}</span>
@@ -2059,11 +2069,30 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({
           <div className="bg-white rounded-3xl max-w-xl w-full border border-blue-100 shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 my-8">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center gap-3">
-                <img
-                  src={editingAccount.avatar}
-                  alt=""
-                  className="w-10 h-10 rounded-full object-cover border border-gray-200"
-                />
+                <label
+                  title="Nhấn để đổi ảnh đại diện"
+                  className="relative group/editaccavatar cursor-pointer shrink-0"
+                >
+                  <img
+                    src={editingAccount.avatar}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    className="w-10 h-10 rounded-full object-cover border border-gray-200 bg-white"
+                  />
+                  <span className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/editaccavatar:opacity-100 flex items-center justify-center text-white transition-opacity">
+                    <Camera className="w-3.5 h-3.5" />
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleAccountAvatarUpload(editingAccount.id, file);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
                 <div>
                   <h3 className="text-base font-extrabold text-[#17365D]">
                     Tùy Chỉnh Phân Quyền Chi Tiết

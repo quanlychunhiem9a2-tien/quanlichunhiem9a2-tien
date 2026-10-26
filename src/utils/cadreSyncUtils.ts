@@ -1,5 +1,11 @@
 import { AppState, RolePermissions, Student, UserAccount, UserRole } from '../types';
 import { defaultRolePermissions, initialUserAccounts } from '../mockData';
+import {
+  DEFAULT_TEACHER_AVATAR,
+  getPersistedAvatarStore,
+  isCustomAvatarUrl,
+  persistAvatarChange,
+} from './avatarUpload';
 
 export const STANDARD_CLASS_ROLES = [
   'Thành viên',
@@ -108,7 +114,8 @@ export function deriveCadreRoleInfo(student: Student): {
 }
 
 /**
- * Synchronizes userAccounts and rolePermissions with the actual students[] list in AppState.
+ * Synchronizes userAccounts and rolePermissions with the actual students[] list in AppState,
+ * while preserving custom uploaded avatars across teacher, students, and accounts.
  */
 export function syncUserAccountsWithStudents(state: {
   students: Student[];
@@ -116,12 +123,15 @@ export function syncUserAccountsWithStudents(state: {
   rolePermissions?: Record<string, RolePermissions>;
   teacherName?: string;
   teacherRole?: string;
+  teacherAvatar?: string;
   currentUser?: UserAccount;
 }): {
   userAccounts: UserAccount[];
   rolePermissions: Record<string, RolePermissions>;
   currentUser: UserAccount;
+  teacherAvatar: string;
 } {
+  const avatarStore = getPersistedAvatarStore();
   const students = Array.isArray(state.students) ? state.students : [];
   const existingAccounts = Array.isArray(state.userAccounts)
     ? state.userAccounts
@@ -131,17 +141,29 @@ export function syncUserAccountsWithStudents(state: {
     ...(state.rolePermissions || {}),
   };
 
-  // 1. Teacher account
+  // 1. Teacher account - prioritize custom uploaded avatar
   const existingTeacher = existingAccounts.find((a) => a.role === 'teacher');
+  const teacherId = existingTeacher?.id || 'user-gvcn';
+  const currentUserTeacherAvatar =
+    state.currentUser?.role === 'teacher' ? state.currentUser.avatar : undefined;
+
+  const resolvedTeacherAvatar =
+    (isCustomAvatarUrl(state.teacherAvatar) && state.teacherAvatar) ||
+    (isCustomAvatarUrl(currentUserTeacherAvatar) && currentUserTeacherAvatar) ||
+    (isCustomAvatarUrl(existingTeacher?.avatar) && existingTeacher?.avatar) ||
+    avatarStore.teacherAvatar ||
+    avatarStore.byAccountId[teacherId] ||
+    state.teacherAvatar ||
+    existingTeacher?.avatar ||
+    DEFAULT_TEACHER_AVATAR;
+
   const teacherAccount: UserAccount = {
-    id: existingTeacher?.id || 'user-gvcn',
+    id: teacherId,
     name: state.teacherName || existingTeacher?.name || 'Trần Văn Tiến',
     role: 'teacher',
     roleTitle: state.teacherRole || existingTeacher?.roleTitle || 'Giáo viên chủ nhiệm',
     category: 'GVCN',
-    avatar:
-      existingTeacher?.avatar ||
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    avatar: resolvedTeacherAvatar,
     phone: existingTeacher?.phone || '0988776655',
     password: existingTeacher?.password || '123456',
   };
@@ -188,6 +210,19 @@ export function syncUserAccountsWithStudents(state: {
       existingPermissions[finalRoleKey] = { ...info.defaultPerms };
     }
 
+    const activeUserAvatarForStudent =
+      state.currentUser?.studentId === st.id ? state.currentUser.avatar : undefined;
+
+    const resolvedStudentAvatar =
+      (isCustomAvatarUrl(st.avatar) && st.avatar) ||
+      (isCustomAvatarUrl(activeUserAvatarForStudent) && activeUserAvatarForStudent) ||
+      (isCustomAvatarUrl(prevByStudent?.avatar) && prevByStudent?.avatar) ||
+      avatarStore.byStudentId[st.id] ||
+      avatarStore.byAccountId[accId] ||
+      st.avatar ||
+      prevByStudent?.avatar ||
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(st.fullName);
+
     studentSyncedAccounts.push({
       id: accId,
       name: st.fullName,
@@ -196,19 +231,22 @@ export function syncUserAccountsWithStudents(state: {
       category: info.category,
       teamId: st.teamId,
       studentId: st.id,
-      avatar:
-        st.avatar ||
-        prevByStudent?.avatar ||
-        'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(st.fullName),
+      avatar: resolvedStudentAvatar,
       phone: st.parentPhone || prevByStudent?.phone || undefined,
       password: prevByStudent?.password || prevByRole?.password || '123456',
     });
   }
 
   // 3. Keep any manually created accounts that do NOT have a studentId
-  const manualAccounts = existingAccounts.filter(
-    (a) => a.role !== 'teacher' && !a.studentId
-  );
+  const manualAccounts = existingAccounts
+    .filter((a) => a.role !== 'teacher' && !a.studentId)
+    .map((a) => ({
+      ...a,
+      avatar:
+        (isCustomAvatarUrl(a.avatar) && a.avatar) ||
+        avatarStore.byAccountId[a.id] ||
+        a.avatar,
+    }));
 
   const finalAccounts = [
     teacherAccount,
@@ -233,6 +271,95 @@ export function syncUserAccountsWithStudents(state: {
     userAccounts: finalAccounts,
     rolePermissions: existingPermissions,
     currentUser: resolvedCurrentUser,
+    teacherAvatar: resolvedTeacherAvatar,
+  };
+}
+
+/**
+ * Helper to atomically update an avatar for Teacher, Student Cadre, or Student across
+ * AppState (teacherAvatar, students, userAccounts, currentUser) and persist immediately to localStorage.
+ */
+export function applyAvatarUpdate(
+  prev: AppState,
+  target: {
+    accountId?: string;
+    studentId?: string;
+    isTeacher?: boolean;
+  },
+  avatarUrl: string
+): AppState {
+  const syncedBefore = syncUserAccountsWithStudents(prev);
+  const allAccounts = syncedBefore.userAccounts;
+
+  const targetAccount = target.accountId
+    ? allAccounts.find((a) => a.id === target.accountId)
+    : target.isTeacher
+    ? allAccounts.find((a) => a.role === 'teacher')
+    : target.studentId
+    ? allAccounts.find((a) => a.studentId === target.studentId)
+    : undefined;
+
+  const isTeacherTarget = Boolean(
+    target.isTeacher ||
+      targetAccount?.role === 'teacher' ||
+      target.accountId === 'user-gvcn'
+  );
+  const resolvedAccountId =
+    target.accountId || targetAccount?.id || (isTeacherTarget ? 'user-gvcn' : undefined);
+  const resolvedStudentId = target.studentId || targetAccount?.studentId;
+
+  // Immediately persist to local avatar store so page reload never loses it
+  persistAvatarChange({
+    avatarUrl,
+    isTeacher: isTeacherTarget,
+    accountId: resolvedAccountId,
+    studentId: resolvedStudentId,
+  });
+
+  const nextTeacherAvatar = isTeacherTarget
+    ? avatarUrl
+    : prev.teacherAvatar || syncedBefore.teacherAvatar;
+
+  const updatedStudents = resolvedStudentId
+    ? prev.students.map((st) =>
+        st.id === resolvedStudentId ? { ...st, avatar: avatarUrl } : st
+      )
+    : prev.students;
+
+  const updatedAccounts = allAccounts.map((acc) => {
+    if (isTeacherTarget && acc.role === 'teacher') {
+      return { ...acc, avatar: avatarUrl };
+    }
+    if (resolvedAccountId && acc.id === resolvedAccountId) {
+      return { ...acc, avatar: avatarUrl };
+    }
+    if (resolvedStudentId && acc.studentId === resolvedStudentId) {
+      return { ...acc, avatar: avatarUrl };
+    }
+    return acc;
+  });
+
+  let updatedCurrentUser = prev.currentUser;
+  if (updatedCurrentUser) {
+    const isCurrentMatched =
+      (isTeacherTarget && updatedCurrentUser.role === 'teacher') ||
+      (resolvedAccountId && updatedCurrentUser.id === resolvedAccountId) ||
+      (resolvedStudentId && updatedCurrentUser.studentId === resolvedStudentId);
+    if (isCurrentMatched) {
+      updatedCurrentUser = {
+        ...updatedCurrentUser,
+        avatar: avatarUrl,
+      };
+    }
+  }
+
+  return {
+    ...prev,
+    teacherAvatar: nextTeacherAvatar,
+    students: updatedStudents,
+    userAccounts: updatedAccounts,
+    currentUser: updatedCurrentUser,
+    updatedAt: new Date().toISOString(),
   };
 }
 
@@ -266,9 +393,11 @@ export function applyStudentTeamOrRoleUpdate(
 
   return {
     ...prev,
+    teacherAvatar: synced.teacherAvatar,
     students: updatedStudents,
     userAccounts: synced.userAccounts,
     rolePermissions: synced.rolePermissions,
     currentUser: synced.currentUser,
+    updatedAt: new Date().toISOString(),
   };
 }

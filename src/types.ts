@@ -265,6 +265,7 @@ export interface AppState {
   slogan: string;
   teacherName: string;
   teacherRole: string;
+  teacherAvatar?: string;
   className: string;
   academicYear: string;
   students: Student[];
@@ -282,6 +283,7 @@ export interface AppState {
   currentUser?: UserAccount;
   userAccounts?: UserAccount[];
   rolePermissions?: Record<string, RolePermissions>;
+  updatedAt?: string;
 }
 
 export type NavPage =

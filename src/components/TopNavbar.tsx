@@ -23,7 +23,7 @@ import { isReadOnly, isTeacher, getUserRoleDescription } from '../utils/permissi
 import { LoginModal } from './LoginModal';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { processAvatarImageFile } from '../utils/avatarUpload';
-import { syncUserAccountsWithStudents } from '../utils/cadreSyncUtils';
+import { syncUserAccountsWithStudents, applyAvatarUpdate } from '../utils/cadreSyncUtils';
 
 interface TopNavbarProps {
   appState: AppState;
@@ -45,13 +45,16 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
   const [showTeacherMenu, setShowTeacherMenu] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [avatarSavedMessage, setAvatarSavedMessage] = useState<string | null>(null);
 
   const classOptions = ['Lớp 9A1', 'Lớp 9A2', 'Lớp 9A3', 'Lớp 8A1', 'Lớp 8A2'];
   const yearOptions = ['Năm học 2026 - 2027', 'Năm học 2025 - 2026'];
 
   const readOnly = isReadOnly(appState);
-  const userDesc = getUserRoleDescription(appState.currentUser);
-  const syncedAccounts = syncUserAccountsWithStudents(appState).userAccounts;
+  const syncedState = syncUserAccountsWithStudents(appState);
+  const syncedAccounts = syncedState.userAccounts;
+  const activeUser = syncedState.currentUser;
+  const userDesc = getUserRoleDescription(activeUser);
 
   const handleLogout = () => {
     onUpdateState((prev) => ({
@@ -61,33 +64,56 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
     setShowTeacherMenu(false);
   };
 
+  const triggerSavedFeedback = (msg: string) => {
+    setAvatarSavedMessage(msg);
+    setTimeout(() => {
+      setAvatarSavedMessage((prev) => (prev === msg ? null : prev));
+    }, 3000);
+  };
+
   const handleCurrentUserAvatarUpload = async (file?: File | null) => {
-    if (!file || !appState.currentUser) return;
+    if (!file || !activeUser || activeUser.role === 'guest') return;
     try {
       const dataUrl = await processAvatarImageFile(file);
-      const currentId = appState.currentUser.id;
-      const currentStudentId = appState.currentUser.studentId;
-      onUpdateState((prev) => {
-        const updatedCurrentUser = prev.currentUser
-          ? { ...prev.currentUser, avatar: dataUrl }
-          : prev.currentUser;
-        const updatedAccounts = (prev.userAccounts || []).map((acc) =>
-          acc.id === currentId ? { ...acc, avatar: dataUrl } : acc
-        );
-        const updatedStudents = currentStudentId
-          ? prev.students.map((st) =>
-              st.id === currentStudentId ? { ...st, avatar: dataUrl } : st
-            )
-          : prev.students;
-        return {
-          ...prev,
-          currentUser: updatedCurrentUser,
-          userAccounts: updatedAccounts,
-          students: updatedStudents,
-        };
-      });
+      const targetAccountId = activeUser.id;
+      const targetStudentId = activeUser.studentId;
+      const targetIsTeacher = activeUser.role === 'teacher';
+
+      onUpdateState((prev) =>
+        applyAvatarUpdate(
+          prev,
+          {
+            accountId: targetAccountId,
+            studentId: targetStudentId,
+            isTeacher: targetIsTeacher,
+          },
+          dataUrl
+        )
+      );
+      triggerSavedFeedback('Đã lưu ảnh đại diện mới!');
     } catch (err) {
       console.error('Failed to upload avatar:', err);
+    }
+  };
+
+  const handleSpecificAccountAvatarUpload = async (acc: UserAccount, file?: File | null) => {
+    if (!file) return;
+    try {
+      const dataUrl = await processAvatarImageFile(file);
+      onUpdateState((prev) =>
+        applyAvatarUpdate(
+          prev,
+          {
+            accountId: acc.id,
+            studentId: acc.studentId,
+            isTeacher: acc.role === 'teacher',
+          },
+          dataUrl
+        )
+      );
+      triggerSavedFeedback(`Đã lưu ảnh của ${acc.name}!`);
+    } catch (err) {
+      console.error('Failed to upload account avatar:', err);
     }
   };
 
@@ -235,16 +261,16 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
               >
                 <div className="relative">
                   <img
-                    src={appState.currentUser?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
-                    alt={appState.currentUser?.name}
+                    src={activeUser?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"}
+                    alt={activeUser?.name}
                     referrerPolicy="no-referrer"
                     className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-xs"
                   />
                   <span
                     className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
-                      appState.currentUser?.role === 'teacher'
+                      activeUser?.role === 'teacher'
                         ? 'bg-blue-600'
-                        : appState.currentUser?.category === 'Ban cán sự'
+                        : activeUser?.category === 'Ban cán sự'
                         ? 'bg-emerald-500'
                         : 'bg-amber-500'
                     }`}
@@ -254,18 +280,18 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
                 <div className="text-left hidden lg:block leading-tight">
                   <div className="flex items-center gap-1.5">
                     <span className="block text-xs font-bold text-[#17365D]">
-                      {appState.currentUser?.name}
+                      {activeUser?.name}
                     </span>
                     <span
                       className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                        appState.currentUser?.role === 'teacher'
+                        activeUser?.role === 'teacher'
                           ? 'bg-blue-100 text-[#0B438A]'
-                          : appState.currentUser?.category === 'Ban cán sự'
+                          : activeUser?.category === 'Ban cán sự'
                           ? 'bg-emerald-100 text-emerald-800'
                           : 'bg-amber-100 text-amber-800'
                       }`}
                     >
-                      {appState.currentUser?.roleTitle}
+                      {activeUser?.roleTitle}
                     </span>
                   </div>
                   <span className="block text-[10px] text-[#66809F] font-medium">
@@ -289,7 +315,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
                           className="relative group/navavatar cursor-pointer shrink-0"
                         >
                           <img
-                            src={appState.currentUser?.avatar}
+                            src={activeUser?.avatar}
                             alt=""
                             referrerPolicy="no-referrer"
                             className="w-10 h-10 rounded-full object-cover border border-blue-200 bg-white"
@@ -310,10 +336,10 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
                         </label>
                         <div className="min-w-0">
                           <p className="font-extrabold text-[#17365D] text-xs truncate">
-                            {appState.currentUser?.name}
+                            {activeUser?.name}
                           </p>
                           <p className="text-[#0B438A] font-bold text-[11px] truncate">
-                            {appState.currentUser?.roleTitle}
+                            {activeUser?.roleTitle}
                           </p>
                         </div>
                       </div>
@@ -335,6 +361,12 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
                         />
                       </label>
                     </div>
+                    {avatarSavedMessage && (
+                      <div className="mt-2 px-2 py-1 rounded-lg bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold text-[10.5px] flex items-center gap-1">
+                        <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                        <span>{avatarSavedMessage}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Account Switcher Section (cho GVCN kiểm thử các vai trò) */}
@@ -347,38 +379,61 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
 
                       <div className="max-h-48 overflow-y-auto px-1 space-y-0.5">
                         {syncedAccounts.map((acc) => {
-                          const isCurrent = appState.currentUser?.id === acc.id;
+                          const isCurrent = activeUser?.id === acc.id;
                           return (
-                            <button
+                            <div
                               key={acc.id}
-                              onClick={() => {
-                                onUpdateState((prev) => ({
-                                  ...prev,
-                                  currentUser: acc,
-                                }));
-                                setShowTeacherMenu(false);
-                              }}
                               className={`w-full px-2.5 py-1.5 rounded-xl text-left flex items-center justify-between transition-colors ${
                                 isCurrent
                                   ? 'bg-blue-50 text-[#1677E8] font-bold'
                                   : 'hover:bg-gray-50 text-[#17365D]'
                               }`}
                             >
-                              <div className="flex items-center gap-2">
-                                <img
-                                  src={acc.avatar}
-                                  alt=""
-                                  className="w-6 h-6 rounded-full object-cover"
-                                />
-                                <div>
-                                  <p className="text-xs leading-none">{acc.name}</p>
-                                  <span className="text-[10px] text-[#66809F]">
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <label
+                                  title={`Đổi ảnh đại diện của ${acc.name}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="relative group/accswitch cursor-pointer shrink-0"
+                                >
+                                  <img
+                                    src={acc.avatar}
+                                    alt=""
+                                    referrerPolicy="no-referrer"
+                                    className="w-7 h-7 rounded-full object-cover border border-gray-200 bg-white"
+                                  />
+                                  <span className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover/accswitch:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                    <Camera className="w-3 h-3" />
+                                  </span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handleSpecificAccountAvatarUpload(acc, file);
+                                      e.target.value = '';
+                                    }}
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    onUpdateState((prev) => ({
+                                      ...prev,
+                                      currentUser: acc,
+                                    }));
+                                    setShowTeacherMenu(false);
+                                  }}
+                                  className="text-left min-w-0 flex-1"
+                                >
+                                  <p className="text-xs leading-none truncate">{acc.name}</p>
+                                  <span className="text-[10px] text-[#66809F] block truncate mt-0.5">
                                     {acc.roleTitle} {acc.teamId ? `(Tổ ${acc.teamId})` : ''}
                                   </span>
-                                </div>
+                                </button>
                               </div>
-                              {isCurrent && <Check className="w-3.5 h-3.5 text-[#1677E8]" />}
-                            </button>
+                              {isCurrent && <Check className="w-3.5 h-3.5 text-[#1677E8] shrink-0" />}
+                            </div>
                           );
                         })}
                       </div>

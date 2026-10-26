@@ -39,12 +39,18 @@ import {
   getStudentSemesterRecord
 } from '../utils/tt22Evaluation';
 import { hasPermission, isReadOnly, isTeacher } from '../utils/permissionUtils';
-import { processAvatarImageFile, PRESET_STUDENT_AVATARS } from '../utils/avatarUpload';
+import {
+  processAvatarImageFile,
+  PRESET_STUDENT_AVATARS,
+  persistAvatarChange,
+  isCustomAvatarUrl
+} from '../utils/avatarUpload';
 import {
   syncUserAccountsWithStudents,
   STANDARD_CLASS_ROLES,
   applyStudentTeamOrRoleUpdate,
-  isRegularMemberRole
+  isRegularMemberRole,
+  applyAvatarUpdate
 } from '../utils/cadreSyncUtils';
 
 interface StudentManagementProps {
@@ -553,28 +559,11 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     if (!file) return;
     try {
       const dataUrl = await processAvatarImageFile(file);
-      onUpdateState((prev) => {
-        const updatedStudents = prev.students.map((s) =>
-          s.id === studentId ? { ...s, avatar: dataUrl } : s
-        );
-        const updatedAccounts = (prev.userAccounts || []).map((acc) =>
-          acc.studentId === studentId ? { ...acc, avatar: dataUrl } : acc
-        );
-        const updatedCurrentUser =
-          prev.currentUser?.studentId === studentId
-            ? { ...prev.currentUser, avatar: dataUrl }
-            : prev.currentUser;
-        return {
-          ...prev,
-          students: updatedStudents,
-          userAccounts: updatedAccounts,
-          currentUser: updatedCurrentUser,
-        };
-      });
+      onUpdateState((prev) => applyAvatarUpdate(prev, { studentId }, dataUrl));
       setActiveStudent((prev) =>
         prev && prev.id === studentId ? { ...prev, avatar: dataUrl } : prev
       );
-      showNotice('success', 'Đã tải lên và cập nhật ảnh đại diện học sinh thành công!');
+      showNotice('success', 'Đã tải lên và lưu ảnh đại diện học sinh thành công!');
     } catch (err: any) {
       showNotice('warning', err?.message || 'Không thể tải ảnh đại diện.');
     }
@@ -585,7 +574,14 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     try {
       const dataUrl = await processAvatarImageFile(file);
       setStudentToEdit({ ...studentToEdit, avatar: dataUrl });
-      showNotice('info', 'Đã nạp ảnh đại diện mới. Nhấn "Lưu hồ sơ học sinh" để hoàn tất.');
+      if (studentToEdit.id) {
+        persistAvatarChange({ avatarUrl: dataUrl, studentId: studentToEdit.id });
+        onUpdateState((prev) => applyAvatarUpdate(prev, { studentId: studentToEdit.id }, dataUrl));
+        setActiveStudent((prev) =>
+          prev && prev.id === studentToEdit.id ? { ...prev, avatar: dataUrl } : prev
+        );
+      }
+      showNotice('success', 'Đã tải lên và lưu ảnh đại diện mới cho học sinh!');
     } catch (err: any) {
       showNotice('warning', err?.message || 'Không thể đọc tệp ảnh.');
     }
@@ -624,6 +620,13 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     };
     const normalized = normalizeStudentTT22(studentWithConductFlag);
 
+    if (isCustomAvatarUrl(normalized.avatar)) {
+      persistAvatarChange({
+        avatarUrl: normalized.avatar,
+        studentId: normalized.id,
+      });
+    }
+
     onUpdateState((prev) => {
       const exists = prev.students.some((s) => s.id === normalized.id);
       let updatedList = [];
@@ -638,16 +641,13 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
         ...prev,
         students: updatedList,
       });
-      const updatedCurrentUser =
-        prev.currentUser?.studentId === normalized.id
-          ? { ...prev.currentUser, avatar: normalized.avatar, name: normalized.fullName }
-          : prev.currentUser;
       return {
         ...prev,
-        currentUser: updatedCurrentUser,
+        currentUser: syncedCadres.currentUser,
         userAccounts: syncedCadres.userAccounts,
         rolePermissions: syncedCadres.rolePermissions,
-        students: updatedList,
+        students: syncedCadres.students,
+        updatedAt: new Date().toISOString(),
       };
     });
 

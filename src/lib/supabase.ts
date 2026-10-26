@@ -161,7 +161,11 @@ export async function fetchFromSupabase(): Promise<Partial<AppState> | null> {
     }
 
     if (data && data.data && typeof data.data === 'object') {
-      return data.data as Partial<AppState>;
+      const stateData = data.data as Partial<AppState>;
+      return {
+        ...stateData,
+        updatedAt: stateData.updatedAt || data.updated_at || undefined,
+      };
     }
     return null;
   } catch (err) {

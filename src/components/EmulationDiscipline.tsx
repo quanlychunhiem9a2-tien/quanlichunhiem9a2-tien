@@ -27,7 +27,9 @@ import {
   RefreshCw,
   ArrowDownWideNarrow,
   Sparkles,
-  X
+  X,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { AppState, EmulationRecord, Student } from '../types';
 import { normalizeEmulationRecord } from '../api';
@@ -151,6 +153,14 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [noticeBanner, setNoticeBanner] = useState<string | null>(null);
+  const [expandedStudentIds, setExpandedStudentIds] = useState<Record<string, boolean>>({});
+
+  const toggleStudentDetails = (studentId: string) => {
+    setExpandedStudentIds((prev) => ({
+      ...prev,
+      [studentId]: !prev[studentId],
+    }));
+  };
 
   // Sync selectedWeek if activeCurrentWeek changes on initial load
   useEffect(() => {
@@ -1175,6 +1185,9 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                             const netDelta = activityBonus + recordedPlus - recordedMinus;
                             const canModifyTeam =
                               isGVCN || hasPermission(appState, 'canRecordEmulation', team.teamId);
+                            const isDetailsExpanded = !!expandedStudentIds[student.id];
+                            const plusRecordsCount = memberRecords.filter((r) => r.points > 0).length;
+                            const minusRecordsCount = memberRecords.filter((r) => r.points < 0).length;
 
                             const rankBadgeClass =
                               memberIdx === 0
@@ -1208,7 +1221,7 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                                   </span>
                                 </td>
 
-                                {/* Student Info, Team & Role Editor, Full Itemized Merit/Demerit List */}
+                                {/* Student Info, Team & Role Editor, Collapsible Merit/Demerit List */}
                                 <td className="py-2.5 px-3 align-top">
                                   <div className="flex items-start gap-2.5">
                                     <img
@@ -1288,79 +1301,128 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                                         )}
                                       </div>
 
-                                      {/* Full itemized list of merit (+) and demerit (-) records in the week */}
+                                      {/* Collapsible Merit (+) and Demerit (-) Records */}
                                       {memberRecords.length === 0 ? (
-                                        <p className="text-[10.5px] text-[#66809F] mt-1">
+                                        <p className="text-[10.5px] text-[#66809F] mt-0.5">
                                           Bắt đầu tuần: 0 điểm (Chưa có điểm cộng/trừ)
                                         </p>
                                       ) : (
-                                        <div className="mt-1.5 flex flex-col gap-1">
-                                          {memberRecords.map((rec) => {
-                                            const isPlus = rec.points > 0;
-                                            const cleanNote =
-                                              rec.note &&
-                                              !rec.note.startsWith('Chấm nhanh tại danh sách')
-                                                ? rec.note
-                                                : '';
-                                            const shortDate = formatShortDateVN(rec.date);
-                                            return (
-                                              <div
-                                                key={rec.id}
-                                                className={`inline-flex items-center justify-between gap-1.5 px-2 py-1 rounded-lg border text-[10.5px] leading-snug w-fit max-w-full ${
-                                                  isPlus
-                                                    ? 'bg-emerald-50/90 text-emerald-900 border-emerald-200'
-                                                    : 'bg-red-50/90 text-red-900 border-red-200'
-                                                }`}
-                                              >
-                                                <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                                                  <span
-                                                    className={`px-1.5 py-0.2 rounded font-mono font-extrabold text-[10px] shrink-0 ${
-                                                      isPlus
-                                                        ? 'bg-emerald-600 text-white'
-                                                        : 'bg-red-600 text-white'
-                                                    }`}
-                                                  >
-                                                    {isPlus ? `+${rec.points}đ` : `${rec.points}đ`}
-                                                  </span>
-                                                  <span className="font-semibold break-words">
-                                                    {rec.criteria}
-                                                    {cleanNote ? (
-                                                      <span className="font-normal opacity-85">
-                                                        {' '}
-                                                        ({cleanNote})
-                                                      </span>
-                                                    ) : null}
-                                                  </span>
-                                                  {shortDate && (
-                                                    <span className="text-[9.5px] opacity-65 font-mono shrink-0">
-                                                      • {shortDate}
-                                                    </span>
-                                                  )}
-                                                </div>
+                                        <div className="mt-1">
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <button
+                                              type="button"
+                                              onClick={() => toggleStudentDetails(student.id)}
+                                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10.5px] font-bold transition-all cursor-pointer ${
+                                                isDetailsExpanded
+                                                  ? 'bg-[#1677E8] text-white border-[#1677E8] shadow-2xs'
+                                                  : 'bg-blue-50/90 hover:bg-blue-100 text-[#0B438A] border-blue-200'
+                                              }`}
+                                              title={
+                                                isDetailsExpanded
+                                                  ? 'Nhấn để ẩn nội dung điểm cộng và điểm trừ cho gọn'
+                                                  : 'Nhấn để xem đầy đủ nội dung điểm cộng và điểm trừ trong tuần'
+                                              }
+                                            >
+                                              {isDetailsExpanded ? (
+                                                <>
+                                                  <ChevronUp className="w-3 h-3" />
+                                                  <span>Ẩn chi tiết</span>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <Eye className="w-3 h-3 text-[#1677E8]" />
+                                                  <span>Chi tiết ({memberRecords.length})</span>
+                                                  <ChevronDown className="w-3 h-3" />
+                                                </>
+                                              )}
+                                            </button>
 
-                                                {canModifyTeam && (
-                                                  <div className="inline-flex items-center gap-0.5 shrink-0 ml-1">
-                                                    <button
-                                                      type="button"
-                                                      onClick={() => handleOpenEditRecord(rec)}
-                                                      title="Sửa nội dung điểm cộng/trừ này"
-                                                      className="p-0.5 rounded hover:bg-black/10 opacity-70 hover:opacity-100 transition-opacity"
-                                                    >
-                                                      <Edit3 className="w-2.5 h-2.5" />
-                                                    </button>
-                                                    <button
-                                                      type="button"
-                                                      onClick={() => handleDeleteRecord(rec.id)}
-                                                      title="Xóa mục điểm cộng/trừ này"
-                                                      className="p-0.5 rounded hover:bg-red-200/70 text-red-700 opacity-75 hover:opacity-100 transition-opacity"
-                                                    >
-                                                      <X className="w-3 h-3" />
-                                                    </button>
-                                                  </div>
+                                            {!isDetailsExpanded && (
+                                              <div className="inline-flex items-center gap-1 text-[10px]">
+                                                {plusRecordsCount > 0 && (
+                                                  <span className="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+                                                    +{plusRecordsCount} lượt cộng
+                                                  </span>
+                                                )}
+                                                {minusRecordsCount > 0 && (
+                                                  <span className="px-1.5 py-0.2 rounded bg-red-50 text-red-700 border border-red-200 font-semibold">
+                                                    -{minusRecordsCount} lượt trừ
+                                                  </span>
                                                 )}
                                               </div>
-                                            );
-                                          })}
+                                            )}
+                                          </div>
+
+                                          {isDetailsExpanded && (
+                                            <div className="mt-1.5 flex flex-col gap-1 pl-2 border-l-2 border-blue-200">
+                                              {memberRecords.map((rec) => {
+                                                const isPlus = rec.points > 0;
+                                                const cleanNote =
+                                                  rec.note &&
+                                                  !rec.note.startsWith('Chấm nhanh tại danh sách')
+                                                    ? rec.note
+                                                    : '';
+                                                const shortDate = formatShortDateVN(rec.date);
+                                                return (
+                                                  <div
+                                                    key={rec.id}
+                                                    className={`inline-flex items-center justify-between gap-1.5 px-2 py-1 rounded-lg border text-[10.5px] leading-snug w-fit max-w-full ${
+                                                      isPlus
+                                                        ? 'bg-emerald-50/90 text-emerald-900 border-emerald-200'
+                                                        : 'bg-red-50/90 text-red-900 border-red-200'
+                                                    }`}
+                                                  >
+                                                    <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                                                      <span
+                                                        className={`px-1.5 py-0.2 rounded font-mono font-extrabold text-[10px] shrink-0 ${
+                                                          isPlus
+                                                            ? 'bg-emerald-600 text-white'
+                                                            : 'bg-red-600 text-white'
+                                                        }`}
+                                                      >
+                                                        {isPlus ? `+${rec.points}đ` : `${rec.points}đ`}
+                                                      </span>
+                                                      <span className="font-semibold break-words">
+                                                        {rec.criteria}
+                                                        {cleanNote ? (
+                                                          <span className="font-normal opacity-85">
+                                                            {' '}
+                                                            ({cleanNote})
+                                                          </span>
+                                                        ) : null}
+                                                      </span>
+                                                      {shortDate && (
+                                                        <span className="text-[9.5px] opacity-65 font-mono shrink-0">
+                                                          • {shortDate}
+                                                        </span>
+                                                      )}
+                                                    </div>
+
+                                                    {canModifyTeam && (
+                                                      <div className="inline-flex items-center gap-0.5 shrink-0 ml-1">
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => handleOpenEditRecord(rec)}
+                                                          title="Sửa nội dung điểm cộng/trừ này"
+                                                          className="p-0.5 rounded hover:bg-black/10 opacity-70 hover:opacity-100 transition-opacity"
+                                                        >
+                                                          <Edit3 className="w-2.5 h-2.5" />
+                                                        </button>
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => handleDeleteRecord(rec.id)}
+                                                          title="Xóa mục điểm cộng/trừ này"
+                                                          className="p-0.5 rounded hover:bg-red-200/70 text-red-700 opacity-75 hover:opacity-100 transition-opacity"
+                                                        >
+                                                          <X className="w-3 h-3" />
+                                                        </button>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          )}
                                         </div>
                                       )}
                                     </div>
@@ -1371,33 +1433,42 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                                 <td className="py-2.5 px-2.5 text-center font-mono text-[11px] align-top pt-3.5">
                                   {recordedPlus === 0 && recordedMinus === 0 ? (
                                     <span className="text-gray-400">0đ</span>
-                                  ) : recordedPlus > 0 && recordedMinus > 0 ? (
-                                    <div className="flex flex-col items-center gap-0.5 leading-tight">
-                                      <div className="inline-flex items-center gap-1 text-[10px]">
-                                        <span className="text-emerald-600 font-bold">
-                                          +{recordedPlus}đ
-                                        </span>
-                                        <span className="text-gray-300">/</span>
-                                        <span className="text-red-600 font-bold">
-                                          -{recordedMinus}đ
-                                        </span>
-                                      </div>
-                                      <span
-                                        className={`text-[10.5px] font-extrabold ${
-                                          netDelta > 0
-                                            ? 'text-emerald-700'
-                                            : netDelta < 0
-                                            ? 'text-red-700'
-                                            : 'text-gray-600'
-                                        }`}
-                                      >
-                                        ({netDelta > 0 ? `+${netDelta}đ` : `${netDelta}đ`})
-                                      </span>
-                                    </div>
-                                  ) : netDelta > 0 ? (
-                                    <span className="text-emerald-600 font-bold">+{netDelta}đ</span>
                                   ) : (
-                                    <span className="text-red-600 font-bold">{netDelta}đ</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleStudentDetails(student.id)}
+                                      title="Nhấn để xem / ẩn chi tiết nội dung điểm cộng và điểm trừ"
+                                      className="inline-flex flex-col items-center gap-0.5 leading-tight hover:opacity-80 cursor-pointer"
+                                    >
+                                      {recordedPlus > 0 && recordedMinus > 0 ? (
+                                        <>
+                                          <div className="inline-flex items-center gap-1 text-[10px]">
+                                            <span className="text-emerald-600 font-bold">
+                                              +{recordedPlus}đ
+                                            </span>
+                                            <span className="text-gray-300">/</span>
+                                            <span className="text-red-600 font-bold">
+                                              -{recordedMinus}đ
+                                            </span>
+                                          </div>
+                                          <span
+                                            className={`text-[10.5px] font-extrabold ${
+                                              netDelta > 0
+                                                ? 'text-emerald-700'
+                                                : netDelta < 0
+                                                ? 'text-red-700'
+                                                : 'text-gray-600'
+                                            }`}
+                                          >
+                                            ({netDelta > 0 ? `+${netDelta}đ` : `${netDelta}đ`})
+                                          </span>
+                                        </>
+                                      ) : netDelta > 0 ? (
+                                        <span className="text-emerald-600 font-bold">+{netDelta}đ</span>
+                                      ) : (
+                                        <span className="text-red-600 font-bold">{netDelta}đ</span>
+                                      )}
+                                    </button>
                                   )}
                                 </td>
 

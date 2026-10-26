@@ -20,6 +20,7 @@ import {
   Eye
 } from 'lucide-react';
 import { AppState, NavPage, Task } from '../types';
+import { normalizeEmulationRecord } from '../api';
 import { isReadOnly, isTeacher, hasPermission } from '../utils/permissionUtils';
 import { getCurrentSchoolWeekInfo } from '../utils/dateWeekUtils';
 import { WeeklyExemplaryStudentsCard } from './WeeklyExemplaryStudentsCard';
@@ -441,105 +442,141 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         </div>
 
         {/* Card 3: Emulation / Team Standings */}
-        <div className="bg-white rounded-2xl p-5 border border-[#D8E7FA] shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-            <div className="flex items-center gap-2">
-              <span className="text-amber-500">🏆</span>
-              <h3 className="text-sm font-bold text-[#17365D]">Thi đua - Nề nếp</h3>
-              <span className="text-[10.5px] px-2 py-0.5 rounded-md bg-blue-100 text-[#0B438A] font-bold font-mono">
-                Tuần {activeCurrentWeek}/35
-              </span>
+        {(() => {
+          const normalizedWeekRecords = (appState.emulationRecords || [])
+            .map((r) => normalizeEmulationRecord(r, students))
+            .filter((r) => r.week === activeCurrentWeek || (!r.week && activeCurrentWeek === 2));
+
+          const totalWeekPlus = normalizedWeekRecords
+            .filter((r) => r.points > 0)
+            .reduce((sum, r) => sum + r.points, 0);
+          const totalWeekMinus = normalizedWeekRecords
+            .filter((r) => r.points < 0)
+            .reduce((sum, r) => sum + Math.abs(r.points), 0);
+
+          const liveTeamScores = [1, 2, 3, 4]
+            .map((tId) => {
+              const tRecords = normalizedWeekRecords.filter((r) => r.teamId === tId);
+              const tPoints = tRecords.reduce((sum, r) => sum + r.points, 0);
+              return {
+                teamId: tId,
+                teamName: `Tổ ${tId}`,
+                points: tPoints,
+                recordsCount: tRecords.length,
+              };
+            })
+            .sort((a, b) => b.points - a.points || a.teamId - b.teamId);
+
+          const totalClassPoints = liveTeamScores.reduce((sum, t) => sum + t.points, 0);
+
+          return (
+            <div className="bg-white rounded-2xl p-5 border border-[#D8E7FA] shadow-xs flex flex-col justify-between">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <span className="text-amber-500">🏆</span>
+                  <h3 className="text-sm font-bold text-[#17365D]">Thi đua - Nề nếp</h3>
+                  <span className="text-[10.5px] px-2 py-0.5 rounded-md bg-blue-100 text-[#0B438A] font-bold font-mono">
+                    Tuần {activeCurrentWeek}/35
+                  </span>
+                </div>
+                <button
+                  onClick={() => onNavigate('emulation')}
+                  className="text-xs font-semibold text-[#1677E8] hover:text-[#073B82] flex items-center gap-0.5"
+                >
+                  Xem chi tiết <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 items-center py-2">
+                {/* Radial score gauge */}
+                <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="38" fill="transparent" stroke="#E2EFFF" strokeWidth="10" />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="38"
+                      fill="transparent"
+                      stroke="#0284C7"
+                      strokeWidth="10"
+                      strokeDasharray="230 238"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <span className="text-[10px] text-[#66809F] font-medium">Tuần {activeCurrentWeek}/35</span>
+                    <span className="text-sm font-extrabold text-[#0B438A] font-mono">
+                      {totalClassPoints >= 0 ? `+${totalClassPoints}đ` : `${totalClassPoints}đ`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Quick breakdown stats */}
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex items-center gap-1.5 text-[#0B438A] font-bold text-[11.5px]">
+                    <span>📊</span> Điểm tuần (Khởi đầu 0đ)
+                  </div>
+                  <div className="text-[11.5px] text-[#17365D] flex items-center justify-between">
+                    <span>
+                      <span className="w-2 h-2 inline-block rounded-full bg-[#10B981] mr-1"></span>
+                      Tổng điểm cộng:
+                    </span>
+                    <strong className="font-mono text-emerald-600">+{totalWeekPlus}đ</strong>
+                  </div>
+                  <div className="text-[11.5px] text-[#17365D] flex items-center justify-between">
+                    <span>
+                      <span className="w-2 h-2 inline-block rounded-full bg-[#EF4444] mr-1"></span>
+                      Tổng điểm trừ:
+                    </span>
+                    <strong className="font-mono text-red-600">-{totalWeekMinus}đ</strong>
+                  </div>
+                  <div className="text-[11px] text-[#66809F]">
+                    Lượt ghi nhận tuần: <strong>{normalizedWeekRecords.length} lượt</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Team rankings 1 to 4 */}
+              <div className="mt-2 pt-2 border-t border-gray-100">
+                <p className="text-[11px] font-bold text-[#66809F] uppercase tracking-wider mb-1.5">
+                  Xếp hạng 4 tổ (Tuần {activeCurrentWeek})
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {liveTeamScores.map((t, idx) => {
+                    const cardStyles = [
+                      'bg-amber-50/70 border-amber-100 text-amber-700',
+                      'bg-slate-50 border-slate-200 text-slate-700',
+                      'bg-amber-50/40 border-amber-100/60 text-amber-900',
+                      'bg-gray-50 border-gray-200 text-gray-700',
+                    ];
+                    const badgeStyles = [
+                      'bg-amber-400 text-white',
+                      'bg-slate-300 text-slate-700',
+                      'bg-amber-600 text-white',
+                      'bg-gray-300 text-gray-700',
+                    ];
+                    return (
+                      <div
+                        key={t.teamId}
+                        className={`flex items-center justify-between p-1.5 rounded-lg border ${cardStyles[idx]}`}
+                      >
+                        <span className="flex items-center gap-1.5 font-bold text-[#17365D]">
+                          <span
+                            className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${badgeStyles[idx]}`}
+                          >
+                            {idx + 1}
+                          </span>
+                          {t.teamName}
+                        </span>
+                        <span className="font-bold font-mono">{t.points} điểm</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-            <button
-              onClick={() => onNavigate('emulation')}
-              className="text-xs font-semibold text-[#1677E8] hover:text-[#073B82] flex items-center gap-0.5"
-            >
-              Xem chi tiết <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 items-center py-2">
-            {/* Radial score gauge */}
-            <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
-              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="38" fill="transparent" stroke="#E2EFFF" strokeWidth="10" />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="38"
-                  fill="transparent"
-                  stroke="#0284C7"
-                  strokeWidth="10"
-                  strokeDasharray="230 238"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span className="text-[10px] text-[#66809F] font-medium">Tuần {activeCurrentWeek}/35</span>
-                <span className="text-sm font-extrabold text-[#0B438A] font-mono">385/400</span>
-              </div>
-            </div>
-
-            {/* Quick breakdown stats */}
-            <div className="space-y-1.5 text-xs">
-              <div className="flex items-center gap-1.5 text-[#10B981] font-semibold text-[11.5px]">
-                <span>↑</span> Tổng điểm thi đua
-              </div>
-              <div className="text-[11.5px] text-[#17365D]">
-                <span className="w-2 h-2 inline-block rounded-full bg-[#10B981] mr-1"></span>
-                Khá: 18 <span className="text-gray-400">(47,4%)</span>
-              </div>
-              <div className="text-[11.5px] text-[#17365D]">
-                <span className="w-2 h-2 inline-block rounded-full bg-[#F59E0B] mr-1"></span>
-                Trung bình: 4 <span className="text-gray-400">(10,5%)</span>
-              </div>
-              <div className="text-[11.5px] text-[#17365D]">
-                <span className="w-2 h-2 inline-block rounded-full bg-[#EF4444] mr-1"></span>
-                Yếu: 1 <span className="text-gray-400">(2,6%)</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Team rankings 1 to 4 */}
-          <div className="mt-2 pt-2 border-t border-gray-100">
-            <p className="text-[11px] font-bold text-[#66809F] uppercase tracking-wider mb-1.5">
-              Xếp hạng tổ
-            </p>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="flex items-center justify-between p-1.5 rounded-lg bg-amber-50/70 border border-amber-100">
-                <span className="flex items-center gap-1.5 font-bold text-[#17365D]">
-                  <span className="w-4 h-4 rounded-full bg-amber-400 text-white flex items-center justify-center text-[10px] font-bold">1</span>
-                  Tổ 1
-                </span>
-                <span className="font-bold text-amber-700 font-mono">98 điểm</span>
-              </div>
-
-              <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="flex items-center gap-1.5 font-bold text-[#17365D]">
-                  <span className="w-4 h-4 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center text-[10px] font-bold">2</span>
-                  Tổ 2
-                </span>
-                <span className="font-bold text-slate-700 font-mono">96 điểm</span>
-              </div>
-
-              <div className="flex items-center justify-between p-1.5 rounded-lg bg-amber-50/40 border border-amber-100/60">
-                <span className="flex items-center gap-1.5 font-bold text-[#17365D]">
-                  <span className="w-4 h-4 rounded-full bg-amber-600 text-white flex items-center justify-center text-[10px] font-bold">3</span>
-                  Tổ 3
-                </span>
-                <span className="font-bold text-amber-900 font-mono">95 điểm</span>
-              </div>
-
-              <div className="flex items-center justify-between p-1.5 rounded-lg bg-gray-50 border border-gray-200">
-                <span className="flex items-center gap-1.5 font-bold text-[#17365D]">
-                  <span className="w-4 h-4 rounded-full bg-gray-300 text-gray-700 flex items-center justify-center text-[10px] font-bold">4</span>
-                  Tổ 4
-                </span>
-                <span className="font-bold text-gray-700 font-mono">94 điểm</span>
-              </div>
-            </div>
-          </div>
-        </div>
+          );
+        })()}
       </div>
 
       {/* 4. Lower Two-Column Grid + Right Column */}

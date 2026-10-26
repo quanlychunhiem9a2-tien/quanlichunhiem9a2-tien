@@ -1,4 +1,4 @@
-import { AppState, HomeroomPlan } from './types';
+import { AppState, EmulationRecord, HomeroomPlan, Student } from './types';
 import { defaultAppState, guestUserAccount } from './mockData';
 import { normalizeStudentTT22 } from './utils/tt22Evaluation';
 import { getCurrentSchoolWeekInfo, getSchoolWeekMeta } from './utils/dateWeekUtils';
@@ -15,6 +15,62 @@ const STORAGE_KEY = 'gvcn_ai_app_state_v2';
 const SESSION_USER_KEY = 'gvcn_ai_session_user_v2';
 
 let saveSequence = 0;
+
+const DEMERIT_KEYWORDS = [
+  'đi học muộn',
+  'đi trễ',
+  'nói chuyện riêng',
+  'mất trật tự',
+  'quên khăn quàng',
+  'thẻ học sinh',
+  'không thuộc bài',
+  'thiếu bài tập',
+  'không chuẩn bị bài',
+  'không trực nhật',
+  'không thực hiện trực nhật',
+  'xả rác',
+  'nghỉ học không phép',
+  'nhắc nhở nề nếp',
+  'vi phạm',
+];
+
+export function normalizeEmulationRecord(
+  rec: EmulationRecord,
+  students: Student[]
+): EmulationRecord {
+  const criteriaText = (rec.criteria || '').trim();
+  const lowerCriteria = criteriaText.toLowerCase();
+  const isKnownDemerit = DEMERIT_KEYWORDS.some((kw) => lowerCriteria.includes(kw));
+
+  const absPoints = Math.max(1, Math.abs(Number(rec.points) || 1));
+  const isMinus = rec.type === 'minus' || Number(rec.points) < 0 || isKnownDemerit;
+
+  const finalType: 'plus' | 'minus' = isMinus ? 'minus' : 'plus';
+  const finalPoints = isMinus ? -absPoints : absPoints;
+
+  let matchedStudent: Student | undefined;
+  if (rec.studentId) {
+    matchedStudent = students.find((s) => s.id === rec.studentId);
+  }
+  if (!matchedStudent && rec.studentName) {
+    const targetName = rec.studentName.trim().toLowerCase();
+    matchedStudent = students.find(
+      (s) => s.fullName.trim().toLowerCase() === targetName
+    );
+  }
+
+  return {
+    ...rec,
+    week: Number(rec.week) || 2,
+    type: finalType,
+    points: finalPoints,
+    criteria: criteriaText || (finalType === 'plus' ? 'Điểm cộng thi đua' : 'Điểm trừ nề nếp'),
+    note: (rec.note || '').trim(),
+    studentId: matchedStudent ? matchedStudent.id : rec.studentId,
+    studentName: matchedStudent ? matchedStudent.fullName : rec.studentName?.trim() || undefined,
+    teamId: matchedStudent ? matchedStudent.teamId : Number(rec.teamId) || 1,
+  };
+}
 
 function normalizePlanWeekDates(plan: HomeroomPlan): HomeroomPlan {
   if (!plan.weekNumber || plan.weekNumber < 1 || plan.weekNumber > 35) return plan;
@@ -81,6 +137,13 @@ function hydrateAppState(
     };
   });
 
+  const rawEmulationRecords = Array.isArray(rawData.emulationRecords)
+    ? rawData.emulationRecords
+    : defaultAppState.emulationRecords;
+  const normalizedEmulationRecords = rawEmulationRecords.map((r) =>
+    normalizeEmulationRecord(r, normalizedStudents)
+  );
+
   // Tự động cập nhật tuần hiện tại và ngày hôm nay khi bước sang ngày mới / tuần mới
   const resolvedWeek =
     !rawData.currentEmulationWeek ||
@@ -110,6 +173,7 @@ function hydrateAppState(
     currentEmulationWeek: resolvedWeek,
     plans: rawPlans.map(normalizePlanWeekDates),
     students: normalizedStudents,
+    emulationRecords: normalizedEmulationRecords,
     currentUser: syncedCadres.currentUser,
     userAccounts: syncedCadres.userAccounts,
     rolePermissions: syncedCadres.rolePermissions,

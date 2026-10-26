@@ -371,6 +371,7 @@ export function applyStudentTeamOrRoleUpdate(
   studentId: string,
   updates: { teamId?: number; roleInClass?: string }
 ): AppState {
+  const targetStudent = prev.students.find((s) => s.id === studentId);
   const updatedStudents = prev.students.map((st) => {
     if (st.id !== studentId) return st;
     const nextTeamId = updates.teamId !== undefined ? updates.teamId : st.teamId;
@@ -386,6 +387,21 @@ export function applyStudentTeamOrRoleUpdate(
     };
   });
 
+  const updatedEmulationRecords =
+    updates.teamId !== undefined && targetStudent && Array.isArray(prev.emulationRecords)
+      ? prev.emulationRecords.map((rec) => {
+          const isMatchedStudent =
+            (rec.studentId && rec.studentId === studentId) ||
+            (rec.studentName &&
+              rec.studentName.trim().toLowerCase() ===
+                targetStudent.fullName.trim().toLowerCase());
+          if (isMatchedStudent) {
+            return { ...rec, studentId, teamId: updates.teamId! };
+          }
+          return rec;
+        })
+      : prev.emulationRecords;
+
   const synced = syncUserAccountsWithStudents({
     ...prev,
     students: updatedStudents,
@@ -395,9 +411,11 @@ export function applyStudentTeamOrRoleUpdate(
     ...prev,
     teacherAvatar: synced.teacherAvatar,
     students: updatedStudents,
+    emulationRecords: updatedEmulationRecords,
     userAccounts: synced.userAccounts,
     rolePermissions: synced.rolePermissions,
     currentUser: synced.currentUser,
     updatedAt: new Date().toISOString(),
   };
 }
+

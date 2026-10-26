@@ -46,11 +46,9 @@ export const WeeklyDutyRosterPanel: React.FC<WeeklyDutyRosterPanelProps> = ({
   compactMode = false,
 }) => {
   const { students, weeklyDutyRosters, currentUser } = appState;
-  const latestWeekInfo = useMemo(() => getCurrentSchoolWeekInfo(), []);
+  const latestWeekInfo = useMemo(() => getCurrentSchoolWeekInfo(), [appState.todayDate, appState.currentEmulationWeek]);
   const activeCurrentWeek =
-    appState.currentEmulationWeek &&
-    appState.currentEmulationWeek !== 2 &&
-    appState.currentEmulationWeek !== 8
+    appState.currentEmulationWeek && appState.currentEmulationWeek >= latestWeekInfo.currentWeek
       ? appState.currentEmulationWeek
       : latestWeekInfo.currentWeek;
 

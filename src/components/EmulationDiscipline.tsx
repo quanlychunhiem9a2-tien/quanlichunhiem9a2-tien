@@ -100,9 +100,9 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
   };
 
   // Compute latest school week from real current date
-  const latestWeekInfo = useMemo(() => getCurrentSchoolWeekInfo(), []);
+  const latestWeekInfo = useMemo(() => getCurrentSchoolWeekInfo(), [appState.todayDate, appState.currentEmulationWeek]);
   const activeCurrentWeek =
-    appState.currentEmulationWeek && appState.currentEmulationWeek !== 2
+    appState.currentEmulationWeek && appState.currentEmulationWeek >= latestWeekInfo.currentWeek
       ? appState.currentEmulationWeek
       : latestWeekInfo.currentWeek;
 
@@ -138,48 +138,18 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
     date: latestWeekInfo.todayISO,
   });
 
-  // Deterministic weekly emulation activity profile for each student so every member in the 4 teams
-  // has realistic individual scores that can be sorted from highest to lowest, while 100% reflecting live +/- records.
-  const getStudentEmulationForWeek = (student: Student, weekNum: number, idxInClass: number): MemberEmulationDetail => {
-    const baseScore = 100;
-
-    // Role bonus & deterministic weekly activity points
-    let roleBonus = 0;
-    let activityNote = 'Chấp hành tốt nội quy lớp';
-    if (student.roleInClass.includes('Lớp trưởng')) {
-      roleBonus = 5;
-      activityNote = 'Gương mẫu, điều hành lớp tốt (+5đ)';
-    } else if (student.roleInClass.includes('Lớp phó')) {
-      roleBonus = 4;
-      activityNote = 'Tích cực phụ trách phong trào lớp (+4đ)';
-    } else if (student.roleInClass.includes('Tổ trưởng')) {
-      roleBonus = 4;
-      activityNote = 'Quản lý tổ nền nếp, kiểm bài tốt (+4đ)';
-    } else {
-      const seed = (idxInClass * 11 + weekNum * 7 + student.teamId * 5) % 10;
-      const bonusTable = [4, 3, 2, 2, 1, 0, 0, -1, -2, 3];
-      const noteTable = [
-        'Hăng hái phát biểu xây dựng bài (+4đ)',
-        'Đạt điểm tốt kiểm tra miệng (+3đ)',
-        'Trực nhật lớp sạch sẽ, đúng giờ (+2đ)',
-        'Đầy đủ đồng phục, khăn quàng đỏ (+2đ)',
-        'Chuẩn bị bài tập về nhà đầy đủ (+1đ)',
-        'Đi học đúng giờ, nề nếp ổn định',
-        'Chấp hành nghiêm túc nội quy tiết học',
-        'Cần tích cực phát biểu hơn (-1đ)',
-        'Nhắc nhở tác phong đầu giờ (-2đ)',
-        'Tích cực tham gia sinh hoạt Đội (+3đ)',
-      ];
-      roleBonus = bonusTable[seed];
-      activityNote = noteTable[seed];
-    }
+  // Điểm thi đua tuần của từng thành viên tổ bắt đầu từ 0 điểm (0đ) khi sang tuần mới
+  // Chỉ cộng/trừ theo các lượt ghi nhận thực tế trong tuần đó
+  const getStudentEmulationForWeek = (student: Student, weekNum: number, _idxInClass: number): MemberEmulationDetail => {
+    const baseScore = 0;
+    const roleBonus = 0;
 
     // Individual emulation records in this week for this student
     const studentRecords = emulationRecords.filter(
       (r) =>
         r.teamId === student.teamId &&
         r.studentName === student.fullName &&
-        (r.week === weekNum || (!r.week && weekNum === activeCurrentWeek))
+        (r.week === weekNum || (!r.week && weekNum === 2))
     );
 
     const recordedPlus = studentRecords
@@ -190,8 +160,9 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
       .filter((r) => r.points < 0)
       .reduce((sum, r) => sum + Math.abs(r.points), 0);
 
-    const totalScore = Math.max(0, baseScore + roleBonus + recordedPlus - recordedMinus);
+    const totalScore = baseScore + roleBonus + recordedPlus - recordedMinus;
 
+    let activityNote = 'Bắt đầu tuần: 0 điểm (Chưa có điểm cộng/trừ)';
     if (studentRecords.length > 0) {
       const latestRec = studentRecords[0];
       activityNote = `${latestRec.criteria} (${latestRec.points > 0 ? `+${latestRec.points}` : latestRec.points}đ)`;
@@ -236,17 +207,17 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
         (r) =>
           r.teamId === tId &&
           !r.studentName &&
-          (r.week === weekNum || (!r.week && weekNum === activeCurrentWeek))
+          (r.week === weekNum || (!r.week && weekNum === 2))
       );
       const teamWideDelta = teamWideRecords.reduce((sum, r) => sum + r.points, 0);
 
-      // Team total member points and normalized /100 score
+      // Team total member points (starting from 0đ at the start of the week)
       const sumMemberScores = memberDetails.reduce((sum, m) => sum + m.totalScore, 0);
       const avgMemberScore =
-        memberDetails.length > 0 ? Math.round(sumMemberScores / memberDetails.length) : 95;
+        memberDetails.length > 0 ? Math.round(sumMemberScores / memberDetails.length) : 0;
 
-      // Calibrated team score (/100)
-      const teamPoints = Math.min(100, Math.max(0, avgMemberScore - 4 + teamWideDelta));
+      // Team score equals total points accumulated by members + team-wide bonus/penalty (starts at 0đ)
+      const teamPoints = sumMemberScores + teamWideDelta;
 
       return {
         teamId: tId,
@@ -470,11 +441,11 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
       'Tuần thi đua',
       'Thời gian',
       'Học kỳ',
-      'Điểm Tổ 1 (/100)',
-      'Điểm Tổ 2 (/100)',
-      'Điểm Tổ 3 (/100)',
-      'Điểm Tổ 4 (/100)',
-      'Tổng điểm Lớp (/400)',
+      'Điểm Tổ 1',
+      'Điểm Tổ 2',
+      'Điểm Tổ 3',
+      'Điểm Tổ 4',
+      'Tổng điểm Lớp',
       'Tổ dẫn đầu tuần',
     ];
 
@@ -575,7 +546,7 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
               </span>
             </div>
             <p className="text-xs text-[#66809F] mt-1">
-              Hiển thị danh sách 4 Tổ và điểm thi đua của từng thành viên (sắp xếp từ cao xuống thấp) • Thang điểm chuẩn: 100đ/tuần
+              Hiển thị danh sách 4 Tổ và điểm thi đua của từng thành viên (sắp xếp từ cao xuống thấp) • Điểm khởi đầu tuần mới: 0 điểm/thành viên
             </p>
           </div>
         </div>
@@ -766,9 +737,8 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                 Kết quả Thi đua Tuần {selectedWeek} / 35 tuần ({appState.academicYear})
               </h3>
               <p className="text-xs text-blue-100 font-medium">
-                Tổng điểm thi đua 4 tổ đạt:{' '}
-                <strong className="text-amber-300 text-sm font-mono">{totalClassWeeklyPoints}/400 điểm</strong> (Tỷ lệ hoàn thành nề nếp:{' '}
-                {((totalClassWeeklyPoints / 400) * 100).toFixed(1)}%)
+                Tổng điểm thi đua tích lũy 4 tổ trong tuần:{' '}
+                <strong className="text-amber-300 text-sm font-mono">{totalClassWeeklyPoints} điểm</strong> (Điểm các thành viên bắt đầu từ 0 điểm khi sang tuần mới)
               </p>
             </div>
 
@@ -777,7 +747,7 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                 <span className="text-[10.5px] text-blue-200 block">Tổ dẫn đầu Tuần {selectedWeek}</span>
                 <span className="text-sm font-black text-amber-300">🏆 {rankedTeams[0]?.teamName}</span>
                 <span className="text-xs font-mono font-bold block">
-                  {rankedTeams[0]?.points}/100 đ (Tổng TV: {rankedTeams[0]?.sumMemberScores}đ)
+                  {rankedTeams[0]?.points} đ (Tổng TV: {rankedTeams[0]?.sumMemberScores}đ)
                 </span>
               </div>
             </div>
@@ -824,7 +794,7 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                       <span className="text-[10px] text-[#66809F] font-mono">Tổng điểm TV: {team.sumMemberScores}đ</span>
                     </div>
                     <span className="text-lg font-black text-[#1677E8] font-mono tabular-nums">
-                      {team.points}/100 đ
+                      {team.points} đ
                     </span>
                   </div>
 
@@ -969,7 +939,7 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                       <div className="text-right px-3 py-1 rounded-xl bg-white border border-blue-200">
                         <span className="text-[10px] text-[#66809F] block">Điểm Tổ / Tổng TV</span>
                         <span className="text-xs font-black text-[#0B438A] font-mono">
-                          {team.points}/100đ <span className="text-gray-400 font-normal">|</span> {team.sumMemberScores}đ
+                          {team.points}đ <span className="text-gray-400 font-normal">|</span> {team.sumMemberScores}đ
                         </span>
                       </div>
                       {hasPermission(appState, 'canRecordEmulation', team.teamId) && (
@@ -1019,12 +989,10 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                                 : 'bg-gray-100 text-[#66809F] font-bold';
 
                             const scoreBadgeClass =
-                              totalScore >= 103
+                              totalScore > 0
                                 ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                : totalScore >= 100
-                                ? 'bg-blue-100 text-[#0B438A] border-blue-200'
-                                : totalScore >= 97
-                                ? 'bg-amber-100 text-amber-800 border-amber-200'
+                                : totalScore === 0
+                                ? 'bg-blue-50 text-[#0B438A] border-blue-200'
                                 : 'bg-red-100 text-red-800 border-red-200';
 
                             return (
@@ -1252,20 +1220,20 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {emulationRecords.filter(
-                    (r) => r.week === selectedWeek || (!r.week && selectedWeek === activeCurrentWeek)
+                    (r) => r.week === selectedWeek || (!r.week && selectedWeek === 2)
                   ).length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-8 text-center text-[#66809F]">
-                        Chưa có bản ghi điểm cộng/trừ phát sinh thêm trong Tuần {selectedWeek}.
+                        Chưa có bản ghi điểm cộng/trừ phát sinh trong Tuần {selectedWeek}. Điểm các thành viên đang ở mức khởi đầu 0 điểm.
                       </td>
                     </tr>
                   ) : (
                     emulationRecords
-                      .filter((r) => r.week === selectedWeek || (!r.week && selectedWeek === activeCurrentWeek))
+                      .filter((r) => r.week === selectedWeek || (!r.week && selectedWeek === 2))
                       .map((r) => (
                         <tr key={r.id} className="hover:bg-blue-50/30 transition-colors">
                           <td className="py-3 px-3.5 font-bold font-mono text-blue-600">
-                            Tuần {r.week || selectedWeek}
+                            Tuần {r.week || 2}
                           </td>
                           <td className="py-3 px-3.5 text-[#66809F] font-mono">{r.date}</td>
                           <td className="py-3 px-3.5">
@@ -1373,11 +1341,11 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
                   <th className="py-2.5 px-3">Tuần</th>
                   <th className="py-2.5 px-3">Thời gian</th>
                   <th className="py-2.5 px-3">Học kỳ</th>
-                  <th className="py-2.5 px-3 text-center">Tổ 1 (/100)</th>
-                  <th className="py-2.5 px-3 text-center">Tổ 2 (/100)</th>
-                  <th className="py-2.5 px-3 text-center">Tổ 3 (/100)</th>
-                  <th className="py-2.5 px-3 text-center">Tổ 4 (/100)</th>
-                  <th className="py-2.5 px-3 text-center">Tổng điểm lớp (/400)</th>
+                  <th className="py-2.5 px-3 text-center">Tổ 1</th>
+                  <th className="py-2.5 px-3 text-center">Tổ 2</th>
+                  <th className="py-2.5 px-3 text-center">Tổ 3</th>
+                  <th className="py-2.5 px-3 text-center">Tổ 4</th>
+                  <th className="py-2.5 px-3 text-center">Tổng điểm lớp</th>
                   <th className="py-2.5 px-3 text-right">Tổ dẫn đầu</th>
                 </tr>
               </thead>
@@ -1435,7 +1403,7 @@ export const EmulationDiscipline: React.FC<EmulationDisciplineProps> = ({
               Quy chế và Tiêu chuẩn chấm điểm thi đua 35 tuần ({appState.schoolName})
             </h3>
             <p className="text-[#66809F] mt-1">
-              Mỗi thành viên và mỗi tổ bắt đầu tuần mới với 100 điểm chuẩn. Điểm thi đua tuần của từng thành viên được tính dựa trên điểm cộng thưởng và điểm trừ vi phạm, sắp xếp từ cao xuống thấp trong mỗi tổ.
+              Mỗi thành viên trong 4 tổ bắt đầu tuần mới với 0 điểm (0đ). Điểm thi đua tuần của từng thành viên và từng tổ được tính lũy kế từ các điểm cộng thưởng (+) và điểm trừ vi phạm (-) phát sinh trong tuần, sắp xếp từ cao xuống thấp trong mỗi tổ.
             </p>
           </div>
 

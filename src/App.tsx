@@ -20,6 +20,7 @@ import { NotificationsModal } from './components/NotificationsModal';
 import { AnnouncementsManager } from './components/AnnouncementsManager';
 
 import { isReadOnly, hasPermission, isTeacher } from './utils/permissionUtils';
+import { getCurrentSchoolWeekInfo } from './utils/dateWeekUtils';
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>(defaultAppState);
@@ -40,6 +41,38 @@ export default function App() {
       setIsLoaded(true);
     });
   }, []);
+
+  // Automatically advance to the new school week when calendar moves to a new day/week
+  useEffect(() => {
+    if (!isLoaded) return;
+    const syncWeekWithClock = () => {
+      const latest = getCurrentSchoolWeekInfo();
+      setAppState((prev) => {
+        if (
+          !prev.currentEmulationWeek ||
+          prev.currentEmulationWeek < latest.currentWeek ||
+          prev.todayDate !== latest.todayISO
+        ) {
+          const updated: AppState = {
+            ...prev,
+            currentEmulationWeek: latest.currentWeek,
+            todayDate: latest.todayISO,
+          };
+          saveAppState(updated);
+          return updated;
+        }
+        return prev;
+      });
+    };
+
+    syncWeekWithClock();
+    const timer = setInterval(syncWeekWithClock, 60000);
+    window.addEventListener('focus', syncWeekWithClock);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('focus', syncWeekWithClock);
+    };
+  }, [isLoaded]);
 
   // State updater that auto-saves to backend and localStorage
   // Root-level protection: In Read-Only (guest) mode, block any data mutation except logging in (updating currentUser)

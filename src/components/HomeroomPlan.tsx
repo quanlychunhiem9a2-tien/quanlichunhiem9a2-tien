@@ -106,9 +106,9 @@ export const HomeroomPlanComponent: React.FC<HomeroomPlanProps> = ({
   const canUseAI = hasPermission(appState, 'canUseAI');
 
   // Selected week (1 to 35). Default to current week based on latest date
-  const latestWeekInfo = useMemo(() => getCurrentSchoolWeekInfo(), []);
+  const latestWeekInfo = useMemo(() => getCurrentSchoolWeekInfo(), [appState.todayDate, appState.currentEmulationWeek]);
   const defaultCurrentWeek =
-    appState.currentEmulationWeek && appState.currentEmulationWeek !== 2
+    appState.currentEmulationWeek && appState.currentEmulationWeek >= latestWeekInfo.currentWeek
       ? appState.currentEmulationWeek
       : latestWeekInfo.currentWeek;
   const [selectedWeek, setSelectedWeek] = useState<number>(defaultCurrentWeek);

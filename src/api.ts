@@ -34,16 +34,14 @@ function hydrateAppState(rawData: Partial<AppState>, activeUser: any, latestWeek
   const rawStudents = Array.isArray(rawData.students) ? rawData.students : defaultAppState.students;
   const rawPlans = Array.isArray(rawData.plans) ? rawData.plans : defaultAppState.plans;
   const normalizedStudents = rawStudents.map(normalizeStudentTT22);
+  // Tự động cập nhật tuần hiện tại và ngày hôm nay khi bước sang ngày mới / tuần mới
   const resolvedWeek =
     !rawData.currentEmulationWeek ||
-    rawData.currentEmulationWeek === 2 ||
-    rawData.currentEmulationWeek === 8
+    rawData.currentEmulationWeek < latestWeek.currentWeek ||
+    rawData.todayDate !== latestWeek.todayISO
       ? latestWeek.currentWeek
       : rawData.currentEmulationWeek;
-  const resolvedToday =
-    !rawData.todayDate || rawData.todayDate === '2026-09-11'
-      ? latestWeek.todayISO
-      : rawData.todayDate;
+  const resolvedToday = latestWeek.todayISO;
 
   const syncedCadres = syncUserAccountsWithStudents({
     students: normalizedStudents,

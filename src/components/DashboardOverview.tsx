@@ -44,7 +44,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   const { students, attendanceHistory, todayDate, tasks, notices, currentUser } = appState;
   const latestWeekInfo = getCurrentSchoolWeekInfo();
   const activeCurrentWeek =
-    appState.currentEmulationWeek && appState.currentEmulationWeek !== 2
+    appState.currentEmulationWeek && appState.currentEmulationWeek >= latestWeekInfo.currentWeek
       ? appState.currentEmulationWeek
       : latestWeekInfo.currentWeek;
   const readOnly = isReadOnly(appState);

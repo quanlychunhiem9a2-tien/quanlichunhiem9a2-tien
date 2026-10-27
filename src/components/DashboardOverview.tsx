@@ -22,7 +22,7 @@ import {
 import { AppState, NavPage, Task } from '../types';
 import { normalizeEmulationRecord } from '../api';
 import { isReadOnly, isTeacher, hasPermission } from '../utils/permissionUtils';
-import { getCurrentSchoolWeekInfo } from '../utils/dateWeekUtils';
+import { getCurrentSchoolWeekInfo, getWeekDaysForWeek } from '../utils/dateWeekUtils';
 import { WeeklyExemplaryStudentsCard } from './WeeklyExemplaryStudentsCard';
 
 interface DashboardOverviewProps {
@@ -52,9 +52,11 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   const isGVCN = isTeacher(appState);
   const canToggle = hasPermission(appState, 'canToggleTasks');
 
-  // Calculate live stats from today's attendance
-  const todayRecord = attendanceHistory[todayDate] || {
-    summary: { total: students.length, present: 0, excused: 0, unexcused: 0, late: 0 },
+  const activeTodayISO = todayDate || latestWeekInfo.todayISO;
+
+  // Calculate live stats from today's attendance (defaults to 100% present if no absences recorded yet)
+  const todayRecord = attendanceHistory[activeTodayISO] || {
+    summary: { total: students.length, present: students.length, excused: 0, unexcused: 0, late: 0 },
     records: {},
   };
 
@@ -85,14 +87,11 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   const rankAvgPct = totalStudents > 0 ? ((rankAverage / totalStudents) * 100).toFixed(1).replace('.', ',') : '0';
   const rankWeakPct = totalStudents > 0 ? ((rankWeak / totalStudents) * 100).toFixed(1).replace('.', ',') : '0';
 
-  // Weekly attendance data
-  const weekDays = [
-    { label: 'Thứ 2 (08/09)', key: '2026-09-08' },
-    { label: 'Thứ 3 (09/09)', key: '2026-09-09' },
-    { label: 'Thứ 4 (10/09)', key: '2026-09-10' },
-    { label: 'Thứ 5 (11/09)', key: '2026-09-11' },
-    { label: 'Thứ 6 (12/09)', key: '2026-09-12' },
-  ];
+  // Weekly attendance data for the active current school week
+  const weekDays = getWeekDaysForWeek(activeCurrentWeek).map((d) => ({
+    label: `${d.shortDay} (${d.shortDateVN})`,
+    key: d.dateISO,
+  }));
 
   // Top 5 exemplary students
   const topStudents = students.slice(0, 5);

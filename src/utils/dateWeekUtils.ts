@@ -83,11 +83,78 @@ export function getSchoolWeekMeta(weekNum: number, refDate: Date = new Date()): 
   return {
     weekNumber: clampedWeek,
     semester,
-    startDate,
-    endDate,
+    startDate: startDate,
+    endDate: endDate,
     startISO,
     endISO,
     monthLabel,
     label: `${startDate} – ${endDate}`,
   };
 }
+
+export interface SchoolDayItem {
+  dayIndex: number; // 0 = Thứ Hai .. 5 = Thứ Bảy
+  dayName: string;  // 'Thứ Hai' .. 'Thứ Bảy'
+  shortDay: string; // 'Thứ 2' .. 'Thứ 7'
+  dateVN: string;   // DD/MM/YYYY
+  shortDateVN: string; // DD/MM
+  dateISO: string;  // YYYY-MM-DD
+}
+
+const DAY_NAMES_VN = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
+const SHORT_DAYS_VN = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
+
+/**
+ * Lấy danh sách 6 ngày học trong tuần (Thứ Hai -> Thứ Bảy) của một tuần học (1..35)
+ */
+export function getWeekDaysForWeek(weekNum: number, refDate: Date = new Date()): SchoolDayItem[] {
+  const { week1Monday } = getCurrentSchoolWeekInfo(refDate);
+  const clampedWeek = Math.min(35, Math.max(1, weekNum));
+  const monday = new Date(week1Monday.getTime() + (clampedWeek - 1) * 7 * 24 * 3600 * 1000);
+
+  return Array.from({ length: 6 }, (_, idx) => {
+    const d = new Date(monday.getTime() + idx * 24 * 3600 * 1000);
+    const dateVN = formatDateVN(d);
+    return {
+      dayIndex: idx,
+      dayName: DAY_NAMES_VN[idx],
+      shortDay: SHORT_DAYS_VN[idx],
+      dateVN,
+      shortDateVN: dateVN.slice(0, 5),
+      dateISO: formatDateISO(d),
+    };
+  });
+}
+
+/**
+ * Phân tích chuỗi ngày YYYY-MM-DD sang thứ tiếng Việt, ngày DD/MM/YYYY và tuần học tương ứng
+ */
+export function getDateMetaVN(dateISO: string): {
+  dayName: string;
+  shortDay: string;
+  dateVN: string;
+  shortDateVN: string;
+  weekNumber: number;
+  semester: 1 | 2;
+} {
+  const parts = (dateISO || '').split('-').map(Number);
+  const d =
+    parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])
+      ? new Date(parts[0], parts[1] - 1, parts[2])
+      : new Date();
+
+  const jsDay = d.getDay(); // 0 = Sun, 1 = Mon .. 6 = Sat
+  const idx = jsDay === 0 ? 6 : jsDay - 1;
+  const dateVN = formatDateVN(d);
+  const info = getCurrentSchoolWeekInfo(d);
+
+  return {
+    dayName: DAY_NAMES_VN[idx],
+    shortDay: SHORT_DAYS_VN[idx],
+    dateVN,
+    shortDateVN: dateVN.slice(0, 5),
+    weekNumber: info.currentWeek,
+    semester: info.currentWeek <= 18 ? 1 : 2,
+  };
+}
+
